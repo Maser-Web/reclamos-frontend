@@ -1,1 +1,115 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --color-primary: #f6d000;
+  --color-primary-hover: #e6bf00;
+  --color-primary-soft: #fff9d9;
+  --color-background: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #fafbfc;
+  --color-text: #101828;
+  --color-text-secondary: #667085;
+  --color-border: #e4e7ec;
+  --color-border-strong: #d0d5dd;
+  --color-new: #e5484d;
+  --color-progress: #2970ff;
+  --color-pending: #f79009;
+  --color-closed: #12b76a;
+  --font-family: 'Plus Jakarta Sans', Inter, Arial, sans-serif;
+  --font-xs: .75rem;
+  --font-sm: .8125rem;
+  --font-base: .9375rem;
+  --font-md: 1rem;
+  --font-lg: 1.25rem;
+  --font-xl: 1.5rem;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 20px;
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 5%);
+  --shadow-md: 0 10px 24px rgb(16 24 40 / 7%);
+  --header-height: 68px;
+  --bottom-nav-height: 66px;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--color-background); }
+body { min-width: 320px; margin: 0; background: var(--color-background); color: var(--color-text); font-family: var(--font-family); font-size: var(--font-base); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgb(246 208 0 / 45%); outline-offset: 2px; }
+.page { width: 100%; max-width: 640px; margin: 0 auto; padding: var(--space-6) var(--space-5) var(--space-8); }
+
+/* Marca: no es un control interactivo ni seleccionable. */
+.login-page .login-card .brand-mark { width: 72px; height: 72px; margin-bottom: var(--space-5); background: url('./app/assets/logo.png') center / contain no-repeat; font-size: 0; pointer-events: none; user-select: none; cursor: default; }
+app-header .app-header { position: relative; height: var(--header-height); border-bottom: 1px solid rgb(16 24 40 / 6%); background: var(--color-primary); box-shadow: var(--shadow-sm); }
+app-header .app-header h1 { display: block; margin: 0; color: var(--color-text); font-size: var(--font-lg); font-weight: 800; line-height: var(--header-height); letter-spacing: -.03em; text-align: center; pointer-events: none; user-select: none; cursor: default; }
+app-header .app-header h1::before { position: absolute; top: 50%; left: 58px; width: 44px; height: 44px; content: ''; transform: translateY(-50%); background: url('./app/assets/logo.png') center / contain no-repeat; pointer-events: none; user-select: none; cursor: default; }
+app-header .app-header .icon-button { width: 44px; height: 44px; border-radius: var(--radius-sm); }
+app-header .app-header .icon-button:last-child lucide-icon { display: none; }
+app-header .app-header .icon-button:last-child::before { display: block; width: 18px; height: 23px; box-sizing: border-box; border: 2px solid var(--color-text); border-radius: 3px; content: ''; background: linear-gradient(var(--color-text), var(--color-text)) 4px 7px / 8px 2px no-repeat, linear-gradient(var(--color-text), var(--color-text)) 4px 13px / 8px 2px no-repeat; }
+
+/* Componentes compartidos. */
+app-button .app-button { min-height: 48px; border-radius: var(--radius-md); box-shadow: none; font-size: var(--font-base); font-weight: 700; transition: transform 150ms ease, background 150ms ease, border-color 150ms ease; }
+app-button .app-button:not(:disabled):active { transform: translateY(1px); }
+app-button .app-button.secondary { background: var(--color-surface); border-color: var(--color-border-strong); }
+app-status-badge .badge { border-radius: 7px; padding: 5px 9px; font-size: var(--font-xs); font-weight: 700; letter-spacing: .01em; }
+app-reclamo-card .claim-card { grid-template-columns: 5px minmax(0, 1fr) 24px; gap: var(--space-4); overflow: hidden; border-color: var(--color-border); border-radius: var(--radius-lg); padding: 0 var(--space-4) var(--space-4) 0; box-shadow: var(--shadow-sm); transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; }
+app-reclamo-card .claim-card:hover { border-color: var(--color-border-strong); box-shadow: var(--shadow-md); }
+app-reclamo-card .claim-card i { border-radius: 0; }
+app-reclamo-card .claim-card div { gap: var(--space-1); padding-top: var(--space-4); }
+app-reclamo-card .claim-card strong { margin-top: var(--space-1); font-size: var(--font-sm); letter-spacing: .02em; }
+app-reclamo-card .claim-card h2 { overflow: hidden; margin: 0; font-size: var(--font-md); line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+app-reclamo-card .claim-card p, app-reclamo-card .claim-card small { overflow: hidden; max-width: 100%; font-size: var(--font-sm); text-overflow: ellipsis; white-space: nowrap; }
+app-empty-state .empty { padding: var(--space-10) var(--space-6); border: 1px dashed var(--color-border-strong); border-radius: var(--radius-lg); background: var(--color-surface); }
+
+/* Navegación inferior sobria y equilibrada: sólo las tres funcionalidades vigentes. */
+app-bottom-navigation .bottom-nav { height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom)); border-top: 1px solid rgb(16 24 40 / 8%); background: rgb(255 255 255 / 96%); box-shadow: 0 -8px 24px rgb(16 24 40 / 5%); backdrop-filter: blur(12px); }
+app-bottom-navigation .bottom-nav a { gap: 3px; font-size: 11px; font-weight: 600; letter-spacing: -.01em; }
+app-bottom-navigation .bottom-nav a.active { color: #9a7d00; }
+app-bottom-navigation .bottom-nav a.active::after { width: 4px; height: 4px; border-radius: 99px; content: ''; background: var(--color-primary-hover); }
+
+/* Campos y formularios uniformes. */
+input:not([type='checkbox']):not([type='radio']), select, textarea { width: 100%; min-height: 46px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); font-size: var(--font-base); transition: border-color 150ms ease, box-shadow 150ms ease; }
+input:not([type='checkbox']):not([type='radio']), select { padding: 0 var(--space-3); }
+textarea { min-height: 132px; padding: var(--space-3); resize: vertical; }
+input:focus, select:focus, textarea:focus { border-color: #c7a600; box-shadow: 0 0 0 4px rgb(246 208 0 / 18%); outline: 0; }
+.form, .close-form, .filters { gap: var(--space-5); }
+.form label, .close-form label, .filters label { color: var(--color-text); font-size: var(--font-sm); font-weight: 700; }
+
+/* Composición de las vistas. */
+.summary { gap: var(--space-2); }
+.summary article { min-height: 86px; border-color: var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+.summary b { font-size: var(--font-lg); font-weight: 800; letter-spacing: -.04em; }
+.summary span { font-size: 10px; font-weight: 600; }
+.search { min-height: 48px; margin: var(--space-6) 0; border-color: var(--color-border-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+.search input { min-height: 44px; border: 0; box-shadow: none; }
+.cards { gap: var(--space-3); }
+.detail-card { border-color: var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+.detail-card h2, .claim-head h2 { letter-spacing: -.035em; }
+.info { border-color: var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-subtle); }
+.dates { border-color: var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-subtle); }
+.actions { gap: var(--space-2); }
+.tabs { gap: var(--space-2); overflow-x: auto; scrollbar-width: none; }
+.tabs button { flex: 1 0 auto; font-size: var(--font-sm); font-weight: 600; }
+.tabs .active { border-bottom-width: 3px; }
+.timeline { border-left-color: var(--color-border); }
+.timeline li { margin-bottom: var(--space-6); }
+.switch { padding: 3px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-subtle); }
+.switch button { border-radius: 9px; color: var(--color-text-secondary); font-size: var(--font-sm); font-weight: 700; }
+.switch .active { color: var(--color-text); box-shadow: var(--shadow-sm); }
+.menu { gap: var(--space-2); }
+.menu a { padding: var(--space-4); border: 1px solid transparent; font-size: var(--font-md); font-weight: 600; }
+.menu a:hover { border-color: var(--color-border); background: var(--color-surface); }
+
+/* Login con la misma identidad visual. */
+.login-page { background: radial-gradient(circle at 12% 5%, #fff7ba 0, transparent 28%), var(--color-background); }
+.login-page .login-card { border-color: var(--color-border); border-radius: var(--radius-xl); box-shadow: var(--shadow-md); }
+.login-page .login-card h1 { font-size: 28px; letter-spacing: -.045em; }
+.login-page .login-button { min-height: 50px; border-radius: var(--radius-md); }
+
+@media (max-width: 359px) {
+  :root { --font-xl: 1.35rem; }
+  .page { padding: var(--space-5) var(--space-4) var(--space-8); }
+  app-header .app-header h1::before { left: 54px; width: 34px; height: 34px; }
+  .summary article { min-height: 76px; }
+}
