@@ -1,3 +1,16 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';import { FormBuilder,ReactiveFormsModule,Validators } from '@angular/forms';import { ActivatedRoute,Router } from '@angular/router';import { ReclamosService } from '../../core/Services/reclamos.service';import { UsuariosService } from '../../core/Services/catalogos.service';import { AppButtonComponent,AppHeaderComponent } from '../../core/components/ui';
-@Component({standalone:true,imports:[ReactiveFormsModule,AppHeaderComponent,AppButtonComponent],template:`<app-header title="Agregar comentario" [showBack]="true" (back)="back()"/><form class="page form" [formGroup]="form" (ngSubmit)="submit()"><fieldset><legend>Tipo de comentario</legend><label><input type="radio" value="interno" formControlName="tipo"/> Comentario interno</label><label><input type="radio" value="cliente" formControlName="tipo"/> Respuesta al cliente</label></fieldset><label>Comentario<textarea formControlName="texto" placeholder="Escriba su comentario..."></textarea></label><label class="file">Adjuntar archivos<input type="file" multiple (change)="files=$any($event.target).files"/></label><app-button type="submit" label="Enviar comentario" icon="message-circle" [disabled]="form.invalid"/></form>`,styles:`.form{display:grid;gap:22px}.form label{display:grid;gap:8px;font-weight:800}.form fieldset{display:flex;gap:15px;border:0;padding:0}.form textarea{min-height:150px;font:inherit;padding:14px;border:1px solid var(--color-border);border-radius:var(--radius-md)}.file{padding:14px;border:1px dashed var(--color-border);border-radius:var(--radius-md)}` ,changeDetection:ChangeDetectionStrategy.OnPush})
-export class ReclamoComentarioComponent {private fb=inject(FormBuilder);private service=inject(ReclamosService);private users=inject(UsuariosService);private route=inject(ActivatedRoute);private router=inject(Router);files:FileList|null=null;form=this.fb.nonNullable.group({tipo:['interno' as 'interno'|'cliente',Validators.required],texto:['',Validators.required]});submit(){if(this.form.invalid)return;const data=this.form.getRawValue();this.service.comment(this.id(),{...data,autor:this.users.current().nombre,archivos:[]}).subscribe(()=>this.router.navigate(['/reclamos',this.id(),'seguimiento']))}back(){this.router.navigate(['/reclamos',this.id()])}id(){return this.route.snapshot.paramMap.get('id')??''}}
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AppButtonComponent, AppHeaderComponent } from '../../core/components/ui';
+
+@Component({
+  standalone: true,
+  imports: [AppHeaderComponent, AppButtonComponent],
+  template: `<app-header title="Agregar comentario" [showBack]="true" (back)="back()"/><section class="page notice"><h2>Acción no disponible</h2><p>El backend actual no expone un endpoint para comentarios. El comentario enviado al finalizar tampoco es persistido por el servidor.</p><app-button label="Volver al reclamo" (click)="back()"/></section>`,
+  styles: `.notice{display:grid;gap:18px}.notice p{color:var(--color-text-secondary);line-height:1.5}`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ReclamoComentarioComponent {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  back(): void { void this.router.navigate(['/reclamos', this.route.snapshot.paramMap.get('id') ?? '']); }
+}

@@ -28,12 +28,19 @@
   --shadow-sm: 0 1px 2px rgb(16 24 40 / 5%);
   --shadow-md: 0 10px 24px rgb(16 24 40 / 7%);
   --header-height: 68px;
-  --bottom-nav-height: 66px;
+  --bottom-nav-height: 112px;
 }
 
 * { box-sizing: border-box; }
 html { background: var(--color-background); }
 body { min-width: 320px; margin: 0; background: var(--color-background); color: var(--color-text); font-family: var(--font-family); font-size: var(--font-base); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.swal2-container.swal2-top-end { padding: 16px; }
+.swal2-popup.app-toast { width: min(360px, calc(100vw - 32px)); padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); box-shadow: 0 12px 32px rgb(16 24 40 / 14%); }
+.app-toast .swal2-icon { width: 28px; min-width: 28px; height: 28px; margin: 0 10px 0 0; border-width: 2px; }
+.app-toast .swal2-icon .swal2-icon-content { font-size: 19px; }
+.app-toast__title.swal2-title { margin: 0; color: var(--color-text); font-size: 13px; font-weight: 800; text-align: left; }
+.app-toast__message.swal2-html-container { margin: 2px 0 0; color: var(--color-text-secondary); font-size: 12px; line-height: 1.35; text-align: left; }
+.app-toast .swal2-timer-progress-bar { background: var(--color-primary); }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgb(246 208 0 / 45%); outline-offset: 2px; }
@@ -41,12 +48,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 /* Marca: no es un control interactivo ni seleccionable. */
 .login-page .login-card .brand-mark { width: 72px; height: 72px; margin-bottom: var(--space-5); background: url('./app/assets/logo.png') center / contain no-repeat; font-size: 0; pointer-events: none; user-select: none; cursor: default; }
-app-header .app-header { position: relative; height: var(--header-height); border-bottom: 1px solid rgb(16 24 40 / 6%); background: var(--color-primary); box-shadow: var(--shadow-sm); }
-app-header .app-header h1 { display: block; margin: 0; color: var(--color-text); font-size: var(--font-lg); font-weight: 800; line-height: var(--header-height); letter-spacing: -.03em; text-align: center; pointer-events: none; user-select: none; cursor: default; }
-app-header .app-header h1::before { position: absolute; top: 50%; left: 58px; width: 44px; height: 44px; content: ''; transform: translateY(-50%); background: url('./app/assets/logo.png') center / contain no-repeat; pointer-events: none; user-select: none; cursor: default; }
-app-header .app-header .icon-button { width: 44px; height: 44px; border-radius: var(--radius-sm); }
-app-header .app-header .icon-button:last-child lucide-icon { display: none; }
-app-header .app-header .icon-button:last-child::before { display: block; width: 18px; height: 23px; box-sizing: border-box; border: 2px solid var(--color-text); border-radius: 3px; content: ''; background: linear-gradient(var(--color-text), var(--color-text)) 4px 7px / 8px 2px no-repeat, linear-gradient(var(--color-text), var(--color-text)) 4px 13px / 8px 2px no-repeat; }
 
 /* Componentes compartidos. */
 app-button .app-button { min-height: 48px; border-radius: var(--radius-md); box-shadow: none; font-size: var(--font-base); font-weight: 700; transition: transform 150ms ease, background 150ms ease, border-color 150ms ease; }
@@ -63,10 +64,6 @@ app-reclamo-card .claim-card p, app-reclamo-card .claim-card small { overflow: h
 app-empty-state .empty { padding: var(--space-10) var(--space-6); border: 1px dashed var(--color-border-strong); border-radius: var(--radius-lg); background: var(--color-surface); }
 
 /* Navegación inferior sobria y equilibrada: sólo las tres funcionalidades vigentes. */
-app-bottom-navigation .bottom-nav { height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom)); border-top: 1px solid rgb(16 24 40 / 8%); background: rgb(255 255 255 / 96%); box-shadow: 0 -8px 24px rgb(16 24 40 / 5%); backdrop-filter: blur(12px); }
-app-bottom-navigation .bottom-nav a { gap: 3px; font-size: 11px; font-weight: 600; letter-spacing: -.01em; }
-app-bottom-navigation .bottom-nav a.active { color: #9a7d00; }
-app-bottom-navigation .bottom-nav a.active::after { width: 4px; height: 4px; border-radius: 99px; content: ''; background: var(--color-primary-hover); }
 
 /* Campos y formularios uniformes. */
 input:not([type='checkbox']):not([type='radio']), select, textarea { width: 100%; min-height: 46px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); font-size: var(--font-base); transition: border-color 150ms ease, box-shadow 150ms ease; }

@@ -1,3 +1,33 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core'; import { ActivatedRoute, Router } from '@angular/router'; import { AreasService } from '../../core/Services/catalogos.service'; import { Area, EstadoReclamo } from '../../core/interfaces/models'; import { AppButtonComponent, AppHeaderComponent } from '../../core/components/ui';
-@Component({standalone:true,imports:[AppHeaderComponent,AppButtonComponent],template:`<app-header title="Filtrar reclamos" [showBack]="true" (back)="back()"/><section class="page"><form class="filters" (submit)="apply($event,from.value,to.value)"><h2>Estado</h2>@for(s of estados;track s){<label><input type="checkbox" [value]="s" (change)="toggleEstado(s,$any($event.target).checked)" [checked]="selected().includes(s)"/> {{label(s)}}</label>}<h2>Área</h2>@for(a of areas();track a.id){<label><input type="checkbox" [value]="a.id" (change)="toggleArea(a.id,$any($event.target).checked)"/> {{a.nombre}}</label>}<h2>Fecha de creación</h2><label>Desde<input type="date" #from></label><label>Hasta<input type="date" #to></label><app-button type="submit" label="Aplicar filtros"/><app-button label="Limpiar" variant="secondary" (click)="clear()"/></form></section>`,styles:`.filters{display:grid;gap:14px}.filters h2{margin:12px 0 0}.filters label{font-size:var(--font-md);display:flex;gap:12px;align-items:center}.filters input[type=date]{width:100%;padding:12px;border:1px solid var(--color-border);border-radius:var(--radius-sm);font:inherit}.filters label:has(input[type=date]){display:grid;gap:5px;color:var(--color-text-secondary)}` ,changeDetection:ChangeDetectionStrategy.OnPush})
-export class ReclamosFiltrosComponent {router=inject(Router);private route=inject(ActivatedRoute);private areasService=inject(AreasService);areas=signal<Area[]>([]);estados:EstadoReclamo[]=['nuevo','en-gestion','pendiente','cerrado'];selected=signal<EstadoReclamo[]>([]);areaIds=signal<string[]>([]);constructor(){this.areasService.list().subscribe(x=>this.areas.set(x));const p=this.route.snapshot.queryParamMap;this.selected.set((p.get('estados')?.split(',')??[]) as EstadoReclamo[]);this.areaIds.set(p.get('areas')?.split(',')??[])}toggleEstado(s:EstadoReclamo,on:boolean){this.selected.update(x=>on?[...x,s]:x.filter(i=>i!==s))}toggleArea(id:string,on:boolean){this.areaIds.update(x=>on?[...x,id]:x.filter(i=>i!==id))}apply(e:Event,desde:string,hasta:string){e.preventDefault();this.router.navigate(['/reclamos'],{queryParams:{estados:this.selected().join(',')||null,areas:this.areaIds().join(',')||null,desde:desde||null,hasta:hasta||null}})}clear(){this.router.navigate(['/reclamos/filtros'])}back(){this.router.navigateByUrl('/reclamos')}label(s:EstadoReclamo){return ({nuevo:'Nuevo','en-gestion':'En gestión',pendiente:'Pendiente',cerrado:'Cerrado'}as const)[s]} }
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AppButtonComponent, AppHeaderComponent } from '../../core/components/ui';
+import { EstadoReclamo, RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/reclamo-estados';
+
+@Component({
+  standalone: true,
+  imports: [AppHeaderComponent, AppButtonComponent],
+  template: `<app-header title="Filtrar reclamos" [showBack]="true" (back)="back()"/><section class="page"><form class="filters" (submit)="apply($event)"><h2>Estado</h2>@for(s of estados;track s){<label><input type="checkbox" [value]="s" (change)="toggleEstado(s,$any($event.target).checked)" [checked]="selected().includes(s)"/> {{label(s)}}</label>}<p>El backend actual no ofrece filtros por área ni por fecha. El filtro de estado se aplica sobre la página cargada.</p><app-button type="submit" label="Aplicar filtros"/><app-button label="Limpiar" variant="secondary" (click)="clear()"/></form></section>`,
+  styles: `.filters{display:grid;gap:14px}.filters h2{margin:12px 0 0}.filters label{font-size:var(--font-md);display:flex;gap:12px;align-items:center}.filters p{color:var(--color-text-secondary);line-height:1.5}`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ReclamosFiltrosComponent {
+  readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  readonly estados: EstadoReclamo[] = [RECLAMO_ESTADOS.RECIBIDOS, RECLAMO_ESTADOS.ASIGNADOS, RECLAMO_ESTADOS.FINALIZADO];
+  readonly selected = signal<EstadoReclamo[]>([]);
+
+  constructor() {
+    this.selected.set((this.route.snapshot.queryParamMap.get('estados')?.split(',').filter(Boolean) ?? []) as EstadoReclamo[]);
+  }
+
+  toggleEstado(estado: EstadoReclamo, selected: boolean): void {
+    this.selected.update(estados => selected ? [...estados, estado] : estados.filter(item => item !== estado));
+  }
+  apply(event: Event): void {
+    event.preventDefault();
+    void this.router.navigate(['/reclamos'], { queryParams: { estados: this.selected().join(',') || null } });
+  }
+  clear(): void { void this.router.navigate(['/reclamos/filtros']); this.selected.set([]); }
+  back(): void { void this.router.navigateByUrl('/reclamos'); }
+  label(estado: EstadoReclamo): string { return RECLAMO_ESTADO_ETIQUETAS[estado]; }
+}

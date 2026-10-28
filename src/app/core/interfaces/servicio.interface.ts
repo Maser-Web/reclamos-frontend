@@ -1,0 +1,46 @@
+/** Contrato devuelto por los endpoints de servicios. */
+export interface Servicio {
+  serCodigo: string;
+  serDescri: string | null;
+  serAplic: number | null;
+  serVenc: number | null;
+  serTasa: number | null;
+  serPotvta: number | null;
+  serCtacont: string | null;
+  serApred: number | null;
+  serApredEnt: number | null;
+  serApredEntSu: number | null;
+  serConceptod: number | null;
+  serConceptocont: number | null;
+  serTipo: number | null;
+  serConceptoR: number | null;
+  serTopeG: number | null;
+  serEstado: number | null;
+  serDocob: number | null;
+  serLeyendaCons: string | null;
+  serMoneda: number | null;
+  serApliq: number | null;
+  serLey1: string | null;
+  serLey2: string | null;
+  serVmultiple: number | null;
+  serLeyCpbte: string | null;
+  serLeyTalon: string | null;
+  serLeyCDeuda: string | null;
+  serLeySDeuda: string | null;
+  serGrafconsumo: number | null;
+  serMesgraf: number | null;
+  serServAfip: number | null;
+  serTerm: string | null;
+  serUmedidaAfip: number | null;
+  serPublico: number | null;
+  serSubsidio: number | null;
+  serGrupo: string | null;
+  serPrincipal: number | null;
+  serGrupoCr: string | null;
+  serCpp: number | null;
+  serTelef: number | null;
+  serImprafcostos: number | null;
+  serPorccrtestados: number | null;
+  serAsunto: string | null;
+  serCuerpo: string | null;
+}

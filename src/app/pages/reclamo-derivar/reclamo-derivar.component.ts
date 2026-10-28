@@ -1,5 +1,16 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms'; import { ActivatedRoute, Router } from '@angular/router';
-import { AreasService, UsuariosService } from '../../core/Services/catalogos.service'; import { ReclamosService } from '../../core/Services/reclamos.service'; import { Area, Usuario } from '../../core/interfaces/models'; import { AppButtonComponent, AppHeaderComponent } from '../../core/components/ui';
-@Component({standalone:true,imports:[ReactiveFormsModule,AppHeaderComponent,AppButtonComponent],template:`<app-header title="Derivar reclamo" [showBack]="true" (back)="back()"/><form class="page form" [formGroup]="form" (ngSubmit)="submit()"><label>Seleccionar área<select formControlName="areaId"><option value="">Seleccione un área</option>@for(a of areas();track a.id){<option [value]="a.id">{{a.nombre}}</option>}</select></label><label>Responsable dentro del área<select formControlName="responsableId"><option value="">Seleccione un responsable</option>@for(u of users();track u.id){<option [value]="u.id">{{u.nombre}}</option>}</select></label><label>Comentario (opcional)<textarea formControlName="comentario" placeholder="Agregue un comentario..."></textarea></label><app-button type="submit" label="Derivar reclamo" icon="arrow-right" [disabled]="form.invalid"/></form>`,styles:`.form{display:grid;gap:20px}.form label{font-weight:800;display:grid;gap:8px}.form select,.form textarea{font:inherit;color:var(--color-text);padding:14px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:#fff}.form textarea{min-height:120px;resize:vertical}` ,changeDetection:ChangeDetectionStrategy.OnPush})
-export class ReclamoDerivarComponent { private fb=inject(FormBuilder);private route=inject(ActivatedRoute);private service=inject(ReclamosService);private areasService=inject(AreasService);private usersService=inject(UsuariosService);private router=inject(Router);areas=signal<Area[]>([]);users=signal<Usuario[]>([]);form=this.fb.nonNullable.group({areaId:['',Validators.required],responsableId:['',Validators.required],comentario:['']});constructor(){this.areasService.list().subscribe(x=>this.areas.set(x));this.form.controls.areaId.valueChanges.subscribe(id=>{this.form.controls.responsableId.setValue('');id?this.usersService.byArea(id).subscribe(x=>this.users.set(x)):this.users.set([])})}submit(){if(this.form.invalid)return;this.service.derive(this.id(),this.form.getRawValue()).subscribe(()=>this.router.navigate(['/reclamos',this.id(),'seguimiento']))}back(){this.router.navigate(['/reclamos',this.id()])}private id(){return this.route.snapshot.paramMap.get('id')??''} }
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AppButtonComponent, AppHeaderComponent } from '../../core/components/ui';
+
+@Component({
+  standalone: true,
+  imports: [AppHeaderComponent, AppButtonComponent],
+  template: `<app-header title="Derivar reclamo" [showBack]="true" (back)="back()"/><section class="page notice"><h2>Acción no disponible</h2><p>El backend actual no ofrece un endpoint para derivar o asignar responsables. No se realizará ningún cambio local para evitar mostrar una asignación que no quedó guardada.</p><app-button label="Volver al reclamo" (click)="back()"/></section>`,
+  styles: `.notice{display:grid;gap:18px}.notice p{color:var(--color-text-secondary);line-height:1.5}`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ReclamoDerivarComponent {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  back(): void { void this.router.navigate(['/reclamos', this.route.snapshot.paramMap.get('id') ?? '']); }
+}
