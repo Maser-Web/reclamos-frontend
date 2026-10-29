@@ -22,4 +22,8 @@ export const BACKEND_ENDPOINTS = {
     base: `${baseUrl}/servicios`,
     byId: (id: number) => `${baseUrl}/servicios/${encodeURIComponent(String(id))}`,
   },
+  avisos: {
+    byUsuario: (usuarioId: number) => `${baseUrl}/avisos/${encodeURIComponent(String(usuarioId))}`,
+    visto: (aviCod: number) => `${baseUrl}/avisos/${encodeURIComponent(String(aviCod))}/visto`,
+  },
 } as const;

@@ -14,6 +14,8 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly session = signal<StoredSession | null>(this.readStoredSession());
   readonly isAuthenticated = computed(() => this.session() !== null && !this.isExpired(this.session()!.expiresAt));
+  readonly accessToken = computed(() => this.session()?.accessToken ?? null);
+  readonly usuarioId = computed(() => this.session()?.usuarioId ?? null);
   readonly usuarioCodigo = computed(() => this.session()?.usuarioId ?? null);
   readonly usuarioNombre = computed(() => this.session()?.usuNombre?.trim() || null);
 
