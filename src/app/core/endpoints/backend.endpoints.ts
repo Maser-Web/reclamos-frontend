@@ -8,6 +8,9 @@ export const BACKEND_ENDPOINTS = {
     login: `${baseUrl}/auth/login`,
     session: (sessionId: string) => `${baseUrl}/auth/${encodeURIComponent(sessionId)}`,
   },
+  usuario: {
+    base: `${baseUrl}/usuarios`,
+  },
   reclamos: {
     base: `${baseUrl}/reclamos`,
     byId: (id: string) => `${baseUrl}/reclamos/${encodeURIComponent(id)}`,

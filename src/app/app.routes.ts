@@ -4,6 +4,7 @@ import { authGuard } from './core/Guards/auth.guard';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
+  { path: 'registro', loadComponent: () => import('./pages/registro/registro.component').then(m => m.RegistroComponent) },
   { path: '', component: MobileLayoutComponent, canActivateChild: [authGuard], children: [
     { path: 'reclamos/nuevo', loadComponent: () => import('./pages/reclamo-nuevo/reclamo-nuevo.component').then(m => m.ReclamoNuevoComponent) },
     { path: 'notificaciones', loadComponent: () => import('./pages/notificaciones/notificaciones.component').then(m => m.NotificacionesComponent) },
