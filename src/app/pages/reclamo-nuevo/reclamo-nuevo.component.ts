@@ -6,6 +6,7 @@ import { ReclamosApiService } from '../../core/Services/reclamos-api.service';
 import { AppButtonComponent, AppHeaderComponent, AppIconComponent } from '../../core/components/ui';
 import { NotificationService } from '../../core/Services/notification.service';
 import { Servicio } from '../../core/interfaces/servicio.interface';
+import { Cliente } from '../../core/interfaces/cliente.interface';
 
 @Component({
   standalone: true,
@@ -15,6 +16,16 @@ import { Servicio } from '../../core/interfaces/servicio.interface';
     <main class="page">
       <form class="new-claim-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
         <header><h2>Ingresá tu reclamo</h2><p>Describí el inconveniente y seleccioná el servicio involucrado.</p></header>
+        <label for="cliente">¿A quién corresponde? *</label>
+        @if (loadingClients()) {
+          <p class="status" role="status">Cargando clientes…</p>
+        } @else if (clientsError(); as error) {
+          <section class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/><span>{{ error }}</span><button type="button" (click)="loadClients()">Reintentar</button></section>
+        } @else {
+          <select id="cliente" formControlName="cliente"><option value="">Seleccioná un cliente</option>@for (client of clients(); track client.usuCodigo) {<option [value]="client.usuCodigo">{{ clientLabel(client) }}</option>}</select>
+          @if (!clients().length) { <p class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/>No hay clientes disponibles para seleccionar.</p> }
+          @if (showError('cliente')) { <p class="field-error">Seleccioná un cliente válido.</p> }
+        }
         <label for="motivo">Motivo *</label>
         <textarea id="motivo" formControlName="motivo" maxlength="1000" placeholder="Contanos cuál es el inconveniente..." aria-describedby="motivo-help"></textarea>
         <div id="motivo-help" class="field-help"><span>{{ form.controls.motivo.value.length }}/1000</span>@if (showError('motivo')) { <b>El motivo es obligatorio y no puede contener solo espacios.</b> }</div>
@@ -29,7 +40,7 @@ import { Servicio } from '../../core/interfaces/servicio.interface';
           @if (showError('servicio')) { <p class="field-error">Seleccioná un servicio válido.</p> }
         }
         @if (sessionError(); as error) { <p class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/>{{ error }}</p> }
-        <app-button type="submit" label="Crear reclamo" icon="plus" [disabled]="form.invalid || loadingServices() || !!servicesError() || !services().length || saving()" />
+        <app-button type="submit" label="Crear reclamo" icon="plus" [disabled]="form.invalid || loadingServices() || loadingClients() || !!servicesError() || !!clientsError() || !services().length || !clients().length || saving()" />
       </form>
     </main>
   `,
@@ -45,11 +56,14 @@ export class ReclamoNuevoComponent {
   readonly services = signal<Servicio[]>([]);
   readonly loadingServices = signal(false);
   readonly servicesError = signal<string | null>(null);
+  readonly clients = signal<Cliente[]>([]);
+  readonly loadingClients = signal(false);
+  readonly clientsError = signal<string | null>(null);
   readonly sessionError = signal<string | null>(null);
   readonly saving = signal(false);
-  readonly form = this.fb.nonNullable.group({ motivo: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(1000)]], servicio: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]] });
+  readonly form = this.fb.nonNullable.group({ cliente: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]], motivo: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(1000)]], servicio: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]] });
 
-  constructor() { this.loadServices(); }
+  constructor() { this.loadServices(); this.loadClients(); }
 
   loadServices(): void {
     this.loadingServices.set(true); this.servicesError.set(null);
@@ -60,14 +74,21 @@ export class ReclamoNuevoComponent {
     });
   }
 
+  loadClients(): void {
+    this.loadingClients.set(true); this.clientsError.set(null);
+    this.api.obtenerClientes().subscribe({
+      next: clients => this.clients.set((clients ?? []).filter(client => Number.isInteger(client.usuCodigo) && client.usuCodigo > 0)),
+      error: error => this.clientsError.set(this.apiErrorMessage(error, 'No pudimos cargar los clientes. Intentá nuevamente.')),
+      complete: () => this.loadingClients.set(false),
+    });
+  }
+
   submit(): void {
     this.form.markAllAsTouched();
-    const usuCodigo = this.auth.usuarioCodigo();
-    if (!Number.isInteger(usuCodigo) || !usuCodigo || usuCodigo < 1) { this.sessionError.set('No hay una sesión válida para crear el reclamo. Volvé a iniciar sesión.'); return; }
-    if (this.form.invalid || this.loadingServices() || this.servicesError() || !this.services().length) return;
+    if (this.form.invalid || this.loadingServices() || this.loadingClients() || this.servicesError() || this.clientsError() || !this.services().length || !this.clients().length) return;
     this.saving.set(true); this.sessionError.set(null);
     const value = this.form.getRawValue();
-    this.api.crearReclamo({ motivo: value.motivo.trim(), usu_codigo: usuCodigo, servicio: Number(value.servicio) }).subscribe({
+    this.api.crearReclamo({ motivo: value.motivo.trim(), usu_codigo: Number(value.cliente), servicio: Number(value.servicio) }).subscribe({
       next: () => { void this.notifications.success('Reclamo creado', 'El reclamo fue registrado correctamente.'); void this.router.navigateByUrl('/reclamos'); },
       error: error => { this.saving.set(false); void this.notifications.error('No se pudo crear el reclamo', this.apiErrorMessage(error, 'Ocurrió un error inesperado. Intentá nuevamente.')); },
       complete: () => this.saving.set(false),
@@ -75,7 +96,8 @@ export class ReclamoNuevoComponent {
   }
 
   back(): void { void this.router.navigateByUrl('/reclamos'); }
-  showError(control: 'motivo' | 'servicio'): boolean { const field = this.form.controls[control]; return field.touched && field.invalid; }
+  showError(control: 'cliente' | 'motivo' | 'servicio'): boolean { const field = this.form.controls[control]; return field.touched && field.invalid; }
+  clientLabel(client: Cliente): string { return `${client.usuCodigo} — ${client.usuNombre?.trim() || client.usuLogin?.trim() || 'Sin nombre'}`; }
   serviceLabel(service: Servicio): string { return `${service.serCodigo} — ${service.serDescri?.trim() || 'Sin descripción'}`; }
   private apiErrorMessage(error: unknown, fallback: string): string { if (typeof error === 'object' && error !== null && 'error' in error) { const body = error.error; if (typeof body === 'object' && body !== null && 'mensaje' in body && typeof body.mensaje === 'string') return body.mensaje; } return fallback; }
 }

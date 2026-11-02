@@ -11,12 +11,14 @@ describe('ReclamoNuevoComponent', () => {
   let component: ReclamoNuevoComponent;
   const api = {
     obtenerServicios: jasmine.createSpy('obtenerServicios').and.returnValue(of([{ serCodigo: '2', serDescri: 'Energía' }])),
+    obtenerClientes: jasmine.createSpy('obtenerClientes').and.returnValue(of([{ usuCodigo: 19, usuNombre: 'Cliente de prueba' }])),
     crearReclamo: jasmine.createSpy('crearReclamo').and.returnValue(of(null)),
   };
   const router = { navigateByUrl: jasmine.createSpy('navigateByUrl').and.resolveTo(true) };
 
   beforeEach(async () => {
     api.obtenerServicios.calls.reset();
+    api.obtenerClientes.calls.reset();
     api.crearReclamo.calls.reset();
     await TestBed.configureTestingModule({
       imports: [ReclamoNuevoComponent],
@@ -36,22 +38,23 @@ describe('ReclamoNuevoComponent', () => {
     expect(api.obtenerServicios).toHaveBeenCalled();
     expect(component.services()).toEqual([jasmine.objectContaining({ serCodigo: '2' })]);
     component.form.controls.motivo.setValue('   ');
+    component.form.controls.cliente.setValue('19');
     component.form.controls.servicio.setValue('2');
     component.submit();
     expect(component.form.controls.motivo.invalid).toBeTrue();
     expect(api.crearReclamo).not.toHaveBeenCalled();
   });
 
-  it('submits exactly the supported payload with the session user and returns to the list', () => {
-    component.form.setValue({ motivo: ' No tengo suministro eléctrico ', servicio: '2' });
+  it('submits the selected client in the supported payload and returns to the list', () => {
+    component.form.setValue({ cliente: '19', motivo: ' No tengo suministro eléctrico ', servicio: '2' });
     component.submit();
-    expect(api.crearReclamo).toHaveBeenCalledWith({ motivo: 'No tengo suministro eléctrico', usu_codigo: 7, servicio: 2 });
+    expect(api.crearReclamo).toHaveBeenCalledWith({ motivo: 'No tengo suministro eléctrico', usu_codigo: 19, servicio: 2 });
     expect(router.navigateByUrl).toHaveBeenCalledWith('/reclamos');
   });
 
   it('blocks submission while the services request is in an error state', () => {
     component.servicesError.set('No pudimos cargar los servicios.');
-    component.form.setValue({ motivo: 'Sin luz', servicio: '2' });
+    component.form.setValue({ cliente: '19', motivo: 'Sin luz', servicio: '2' });
     component.submit();
     expect(api.crearReclamo).not.toHaveBeenCalled();
   });
