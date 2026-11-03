@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/Services/auth.service';
 import { ReclamosApiService } from '../../core/Services/reclamos-api.service';
+import { ClientesService } from '../../core/Services/clientes.service';
 import { AppButtonComponent, AppHeaderComponent, AppIconComponent } from '../../core/components/ui';
 import { NotificationService } from '../../core/Services/notification.service';
 import { Servicio } from '../../core/interfaces/servicio.interface';
@@ -16,16 +17,21 @@ import { Cliente } from '../../core/interfaces/cliente.interface';
     <main class="page">
       <form class="new-claim-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
         <header><h2>Ingresá tu reclamo</h2><p>Describí el inconveniente y seleccioná el servicio involucrado.</p></header>
-        <label for="cliente">¿A quién corresponde? *</label>
+        <label for="cliente-busqueda">¿A quién corresponde? *</label>
+        <input id="cliente-busqueda" type="search" [value]="clientSearch()" (input)="onClientSearch($any($event.target).value)" autocomplete="off" placeholder="Buscá por nombre o código" aria-describedby="cliente-help" />
+        <input type="hidden" formControlName="cliente" />
+        <div id="cliente-help" class="field-help"><span>Ingresá al menos 2 letras o un código.</span>@if (selectedClient(); as client) {<b>Seleccionado: {{ clientLabel(client) }}</b>}</div>
         @if (loadingClients()) {
-          <p class="status" role="status">Cargando clientes…</p>
+          <p class="status" role="status">Buscando clientes…</p>
         } @else if (clientsError(); as error) {
-          <section class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/><span>{{ error }}</span><button type="button" (click)="loadClients()">Reintentar</button></section>
-        } @else {
-          <select id="cliente" formControlName="cliente"><option value="">Seleccioná un cliente</option>@for (client of clients(); track client.usuCodigo) {<option [value]="client.usuCodigo">{{ clientLabel(client) }}</option>}</select>
-          @if (!clients().length) { <p class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/>No hay clientes disponibles para seleccionar.</p> }
-          @if (showError('cliente')) { <p class="field-error">Seleccioná un cliente válido.</p> }
+          <section class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/><span>{{ error }}</span></section>
+        } @else if (canSearchClients() && !selectedClient() && !clients().length) {
+          <p class="status" role="status">Sin resultados</p>
+        } @else if (clients().length) {
+          <ul class="client-results" aria-label="Resultados de clientes">@for (client of clients(); track client.cliCodigo) {<li><button type="button" (click)="selectClient(client)"><span class="client-code">#{{ client.cliCodigo }}</span><span class="client-name">{{ client.cliNombre }}</span></button></li>}</ul>
+          @if (hasMoreClients()) {<button class="load-more" type="button" (click)="loadMoreClients()" [disabled]="loadingMoreClients()">{{ loadingMoreClients() ? 'Cargando…' : 'Cargar más' }}</button>}
         }
+        @if (showError('cliente')) { <p class="field-error">Seleccioná un cliente válido.</p> }
         <label for="motivo">Motivo *</label>
         <textarea id="motivo" formControlName="motivo" maxlength="1000" placeholder="Contanos cuál es el inconveniente..." aria-describedby="motivo-help"></textarea>
         <div id="motivo-help" class="field-help"><span>{{ form.controls.motivo.value.length }}/1000</span>@if (showError('motivo')) { <b>El motivo es obligatorio y no puede contener solo espacios.</b> }</div>
@@ -39,17 +45,24 @@ import { Cliente } from '../../core/interfaces/cliente.interface';
           @if (!services().length) { <p class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/>No hay servicios disponibles para seleccionar.</p> }
           @if (showError('servicio')) { <p class="field-error">Seleccioná un servicio válido.</p> }
         }
+        <section class="file-upload" aria-labelledby="archivos-label">
+          <label id="archivos-label" for="archivos">Adjuntar archivos <span>Opcional</span></label>
+          <label class="file-picker" for="archivos"><app-icon name="paperclip" [size]="20"/><span><b>Seleccionar archivos</b><small>Podés elegir uno o más documentos.</small></span></label>
+          <input id="archivos" class="file-input" type="file" multiple (change)="onFilesSelected($any($event.target).files)" aria-describedby="archivos-help" />
+          <div id="archivos-help" class="file-help">@if (selectedFiles().length) {<span>{{ selectedFiles().length }} archivo(s) seleccionado(s)</span><ul>@for (file of selectedFiles(); track file.name + file.size) {<li><app-icon name="paperclip" [size]="14"/>{{ file.name }}</li>}</ul>} @else {<span>Sin archivos seleccionados.</span>}</div>
+        </section>
         @if (sessionError(); as error) { <p class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/>{{ error }}</p> }
-        <app-button type="submit" label="Crear reclamo" icon="plus" [disabled]="form.invalid || loadingServices() || loadingClients() || !!servicesError() || !!clientsError() || !services().length || !clients().length || saving()" />
+        <app-button type="submit" label="Crear reclamo" icon="plus" [disabled]="form.invalid || loadingServices() || !!servicesError() || !services().length || saving()" />
       </form>
     </main>
   `,
-  styles: `.new-claim-form{display:grid;gap:10px}.new-claim-form header{margin-bottom:12px}.new-claim-form h2{margin:0 0 6px;font-size:var(--font-xl)}.new-claim-form header p{margin:0;color:var(--color-text-secondary);font-size:var(--font-sm)}.new-claim-form label{margin-top:8px;font-weight:800}.field-help{display:flex;justify-content:space-between;gap:12px;min-height:20px;color:var(--color-text-secondary);font-size:var(--font-xs)}.field-help b,.field-error{margin:0;color:var(--color-new);font-weight:700}.status{margin:0;padding:13px;border:1px solid var(--color-border);border-radius:var(--radius-md);color:var(--color-text-secondary);font-size:var(--font-sm)}.status.error{display:flex;align-items:center;gap:9px;border-color:#f3cccc;color:#a51d25;background:#fffafa}.status.error span{flex:1}.status button{border:0;border-radius:8px;padding:6px 8px;background:transparent;color:inherit;font-size:12px;font-weight:800}.new-claim-form app-button{margin-top:14px}`,
+  styles: `.new-claim-form{display:grid;gap:10px}.new-claim-form header{margin-bottom:12px}.new-claim-form h2{margin:0 0 6px;font-size:var(--font-xl)}.new-claim-form header p{margin:0;color:var(--color-text-secondary);font-size:var(--font-sm)}.new-claim-form label{margin-top:8px;font-weight:800}.new-claim-form input[type=search]{width:100%;box-sizing:border-box;border:1px solid #d8e0ed;border-radius:12px;padding:13px 15px;background:#fff;color:var(--color-text);font:600 15px var(--font-family);outline:0;transition:border-color .18s,box-shadow .18s}.new-claim-form input[type=search]:focus{border-color:#f1c900;box-shadow:0 0 0 4px #ffe88980}.field-help{display:flex;justify-content:space-between;gap:12px;min-height:20px;color:var(--color-text-secondary);font-size:var(--font-xs)}.field-help b,.field-error{margin:0;color:var(--color-new);font-weight:700}.status{margin:0;padding:13px;border:1px solid var(--color-border);border-radius:var(--radius-md);color:var(--color-text-secondary);font-size:var(--font-sm)}.status.error{display:flex;align-items:center;gap:9px;border-color:#f3cccc;color:#a51d25;background:#fffafa}.status.error span{flex:1}.client-results{display:grid;gap:5px;max-height:248px;margin:2px 0 0;padding:6px;overflow:auto;list-style:none;border:1px solid #dbe3ef;border-radius:13px;background:#fff;box-shadow:0 8px 22px #263d6712}.client-results li{min-width:0}.client-results button{display:flex;width:100%;align-items:center;gap:10px;border:0;border-radius:9px;padding:11px 12px;background:transparent;color:#17233e;font:600 14px var(--font-family);text-align:left;cursor:pointer;transition:background .15s,color .15s}.client-results button:before{content:'Cliente';flex:0 0 auto;border-radius:999px;padding:4px 7px;background:#fff1b0;color:#765a00;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.client-results button:hover,.client-results button:focus-visible{background:#fff8d8;color:#071538;outline:0}.client-results button:active{background:#ffe98a}.load-more{justify-self:center;border:0;border-radius:9px;padding:9px 14px;background:#f2f5fa;color:#44536e;font:800 13px var(--font-family);cursor:pointer}.load-more:hover:not(:disabled){background:#ffe889;color:#1b2945}.load-more:disabled{cursor:wait;opacity:.65}.new-claim-form app-button{margin-top:14px}`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ReclamoNuevoComponent {
+export class ReclamoNuevoComponent implements OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(ReclamosApiService);
+  private readonly clientesService = inject(ClientesService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);
@@ -57,13 +70,21 @@ export class ReclamoNuevoComponent {
   readonly loadingServices = signal(false);
   readonly servicesError = signal<string | null>(null);
   readonly clients = signal<Cliente[]>([]);
+  readonly clientSearch = signal('');
+  readonly selectedClient = signal<Cliente | null>(null);
   readonly loadingClients = signal(false);
+  readonly loadingMoreClients = signal(false);
+  readonly hasMoreClients = signal(false);
   readonly clientsError = signal<string | null>(null);
   readonly sessionError = signal<string | null>(null);
   readonly saving = signal(false);
+  readonly selectedFiles = signal<File[]>([]);
   readonly form = this.fb.nonNullable.group({ cliente: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]], motivo: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(1000)]], servicio: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]] });
+  private searchTimer: ReturnType<typeof setTimeout> | undefined;
+  private searchRequest = 0;
+  private readonly clientPageSize = 20;
 
-  constructor() { this.loadServices(); this.loadClients(); }
+  constructor() { this.loadServices(); }
 
   loadServices(): void {
     this.loadingServices.set(true); this.servicesError.set(null);
@@ -74,18 +95,42 @@ export class ReclamoNuevoComponent {
     });
   }
 
-  loadClients(): void {
-    this.loadingClients.set(true); this.clientsError.set(null);
-    this.api.obtenerClientes().subscribe({
-      next: clients => this.clients.set((clients ?? []).filter(client => Number.isInteger(client.usuCodigo) && client.usuCodigo > 0)),
-      error: error => this.clientsError.set(this.apiErrorMessage(error, 'No pudimos cargar los clientes. Intentá nuevamente.')),
-      complete: () => this.loadingClients.set(false),
-    });
+  onClientSearch(value: string): void {
+    const query = value.trim();
+    this.clientSearch.set(value);
+    this.selectedClient.set(null);
+    this.form.controls.cliente.setValue('');
+    this.clients.set([]); this.clientsError.set(null); this.hasMoreClients.set(false); this.loadingClients.set(false); this.loadingMoreClients.set(false);
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    const request = ++this.searchRequest;
+    if (!this.isClientSearchValid(query)) { this.loadingClients.set(false); return; }
+    this.searchTimer = setTimeout(() => this.searchClients(query, 0, request), 350);
   }
+
+  loadMoreClients(): void {
+    const query = this.clientSearch().trim();
+    if (!this.hasMoreClients() || this.loadingMoreClients() || !this.isClientSearchValid(query)) return;
+    this.searchClients(query, this.clients().length, ++this.searchRequest);
+  }
+
+  selectClient(client: Cliente): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    ++this.searchRequest;
+    this.selectedClient.set(client);
+    this.clientSearch.set(this.clientLabel(client));
+    this.form.controls.cliente.setValue(String(client.cliCodigo));
+    this.clients.set([]); this.hasMoreClients.set(false); this.clientsError.set(null); this.loadingClients.set(false); this.loadingMoreClients.set(false);
+  }
+
+  canSearchClients(): boolean { return this.isClientSearchValid(this.clientSearch().trim()); }
+
+  onFilesSelected(files: FileList | null): void { this.selectedFiles.set(files ? Array.from(files) : []); }
+
+  ngOnDestroy(): void { if (this.searchTimer) clearTimeout(this.searchTimer); ++this.searchRequest; }
 
   submit(): void {
     this.form.markAllAsTouched();
-    if (this.form.invalid || this.loadingServices() || this.loadingClients() || this.servicesError() || this.clientsError() || !this.services().length || !this.clients().length) return;
+    if (this.form.invalid || this.loadingServices() || this.servicesError() || !this.services().length) return;
     this.saving.set(true); this.sessionError.set(null);
     const value = this.form.getRawValue();
     this.api.crearReclamo({ motivo: value.motivo.trim(), usu_codigo: Number(value.cliente), servicio: Number(value.servicio) }).subscribe({
@@ -97,7 +142,30 @@ export class ReclamoNuevoComponent {
 
   back(): void { void this.router.navigateByUrl('/reclamos'); }
   showError(control: 'cliente' | 'motivo' | 'servicio'): boolean { const field = this.form.controls[control]; return field.touched && field.invalid; }
-  clientLabel(client: Cliente): string { return `${client.usuCodigo} — ${client.usuNombre?.trim() || client.usuLogin?.trim() || 'Sin nombre'}`; }
+  clientLabel(client: Cliente): string { return `${client.cliCodigo} — ${client.cliNombre}`; }
   serviceLabel(service: Servicio): string { return `${service.serCodigo} — ${service.serDescri?.trim() || 'Sin descripción'}`; }
+  private searchClients(query: string, offset: number, request: number): void {
+    if (offset === 0) this.loadingClients.set(true); else this.loadingMoreClients.set(true);
+    this.clientsError.set(null);
+    this.clientesService.buscar(query, this.clientPageSize, offset).subscribe({
+      next: response => {
+        if (request !== this.searchRequest) return;
+        const clients = response.data ?? [];
+        const validClients = clients.filter(client => Number.isInteger(client.cliCodigo) && client.cliCodigo > 0 && Boolean(client.cliNombre?.trim()));
+        this.clients.set(offset === 0 ? validClients : [...this.clients(), ...validClients]);
+        this.hasMoreClients.set(clients.length === this.clientPageSize);
+      },
+      error: error => {
+        if (request === this.searchRequest) this.clientsError.set(this.apiErrorMessage(error, 'No pudimos buscar los clientes. Intentá nuevamente.'));
+      },
+      complete: () => {
+        if (request !== this.searchRequest) return;
+        this.loadingClients.set(false); this.loadingMoreClients.set(false);
+      },
+    });
+  }
+  private isClientSearchValid(query: string): boolean {
+    return /^\d+$/.test(query) ? !/^0+$/.test(query) : query.length >= 2;
+  }
   private apiErrorMessage(error: unknown, fallback: string): string { if (typeof error === 'object' && error !== null && 'error' in error) { const body = error.error; if (typeof body === 'object' && body !== null && 'mensaje' in body && typeof body.mensaje === 'string') return body.mensaje; } return fallback; }
 }

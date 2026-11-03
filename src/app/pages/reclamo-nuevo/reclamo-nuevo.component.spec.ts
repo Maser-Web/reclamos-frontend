@@ -4,6 +4,7 @@ import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { of } from 'rxjs';
 import { AuthService } from '../../core/Services/auth.service';
 import { ReclamosApiService } from '../../core/Services/reclamos-api.service';
+import { ClientesService } from '../../core/Services/clientes.service';
 import { ReclamoNuevoComponent } from './reclamo-nuevo.component';
 
 describe('ReclamoNuevoComponent', () => {
@@ -11,20 +12,23 @@ describe('ReclamoNuevoComponent', () => {
   let component: ReclamoNuevoComponent;
   const api = {
     obtenerServicios: jasmine.createSpy('obtenerServicios').and.returnValue(of([{ serCodigo: '2', serDescri: 'Energía' }])),
-    obtenerClientes: jasmine.createSpy('obtenerClientes').and.returnValue(of([{ usuCodigo: 19, usuNombre: 'Cliente de prueba' }])),
     crearReclamo: jasmine.createSpy('crearReclamo').and.returnValue(of(null)),
+  };
+  const clientesService = {
+    buscar: jasmine.createSpy('buscar').and.returnValue(of({ codigo: 200, mensaje: 'OK', data: [{ cliCodigo: 19, cliNombre: 'Cliente de prueba' }] })),
   };
   const router = { navigateByUrl: jasmine.createSpy('navigateByUrl').and.resolveTo(true) };
 
   beforeEach(async () => {
     api.obtenerServicios.calls.reset();
-    api.obtenerClientes.calls.reset();
+    clientesService.buscar.calls.reset();
     api.crearReclamo.calls.reset();
     await TestBed.configureTestingModule({
       imports: [ReclamoNuevoComponent],
       providers: [
         provideZonelessChangeDetection(),
         { provide: ReclamosApiService, useValue: api },
+        { provide: ClientesService, useValue: clientesService },
         { provide: AuthService, useValue: { usuarioCodigo: signal(7), usuarioNombre: signal('Operador'), logout: () => undefined } },
         { provide: Router, useValue: router },
       ],
@@ -36,6 +40,7 @@ describe('ReclamoNuevoComponent', () => {
 
   it('loads selectable services and rejects a blank-only reason locally', () => {
     expect(api.obtenerServicios).toHaveBeenCalled();
+    expect(clientesService.buscar).not.toHaveBeenCalled();
     expect(component.services()).toEqual([jasmine.objectContaining({ serCodigo: '2' })]);
     component.form.controls.motivo.setValue('   ');
     component.form.controls.cliente.setValue('19');

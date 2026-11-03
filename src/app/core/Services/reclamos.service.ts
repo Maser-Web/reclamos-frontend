@@ -10,7 +10,7 @@ import {
   ReclamosPaginationQuery,
 } from '../interfaces/reclamo.interface';
 import { PrioridadReclamo, ReclamoVista, Seguimiento } from '../interfaces/models';
-import { EstadoReclamo, RECLAMO_ESTADOS, RECLAMO_ESTADOS_LISTA } from '../constants/reclamo-estados';
+import { EstadoReclamo, RECLAMO_ESTADOS, RECLAMO_ESTADOS_LISTA, RECLAMO_ESTADO_ETIQUETAS } from '../constants/reclamo-estados';
 
 export type { ReclamoVista } from '../interfaces/models';
 
@@ -58,7 +58,7 @@ export class ReclamosService {
       throw new Error('El estado solicitado no es válido');
     }
     return this.http.patch<ApiResponse<null>>(
-      BACKEND_ENDPOINTS.reclamos.actualizarEstado(id, estadoNormalizado),
+      BACKEND_ENDPOINTS.reclamos.actualizarEstado(id, this.toEstadoBackend(estadoNormalizado)),
       payload,
     ).pipe(map(response => {
       if (response.codigo < 200 || response.codigo >= 300) throw new Error(response.mensaje);
@@ -110,8 +110,9 @@ export class ReclamosService {
       case RECLAMO_ESTADOS.RECIBIDOS:
         return RECLAMO_ESTADOS.RECIBIDOS;
       case 'ASIGNADO':
-      case RECLAMO_ESTADOS.ASIGNADOS:
-        return RECLAMO_ESTADOS.ASIGNADOS;
+      case 'EN CURSO':
+      case RECLAMO_ESTADOS.EN_CURSO:
+        return RECLAMO_ESTADOS.EN_CURSO;
       case RECLAMO_ESTADOS.FINALIZADO:
         return RECLAMO_ESTADOS.FINALIZADO;
       default:
@@ -130,7 +131,7 @@ export class ReclamosService {
   private toSeguimiento(historial: HistorialReclamoBackend): Seguimiento {
     const estadoAnterior = this.toEstadoHistorial(historial.hisEstadoAnterior);
     const estadoNuevo = this.toEstadoHistorial(historial.hisEstadoNuevo) ?? RECLAMO_ESTADOS.RECIBIDOS;
-    const tipo = estadoNuevo === RECLAMO_ESTADOS.FINALIZADO ? 'cerrado' : estadoNuevo === RECLAMO_ESTADOS.ASIGNADOS ? 'asignado' : 'creado';
+    const tipo = estadoNuevo === RECLAMO_ESTADOS.FINALIZADO ? 'cerrado' : estadoNuevo === RECLAMO_ESTADOS.EN_CURSO ? 'asignado' : 'creado';
     const detalle = estadoAnterior ? `De ${RECLAMO_ESTADOS_LISTA.includes(estadoAnterior) ? this.estadoEtiqueta(estadoAnterior) : estadoAnterior} a ${this.estadoEtiqueta(estadoNuevo)}` : undefined;
     return {
       id: String(historial.hisCodigo),
@@ -149,13 +150,19 @@ export class ReclamosService {
       case 'RECIBIDO':
       case RECLAMO_ESTADOS.RECIBIDOS: return RECLAMO_ESTADOS.RECIBIDOS;
       case 'ASIGNADO':
-      case RECLAMO_ESTADOS.ASIGNADOS: return RECLAMO_ESTADOS.ASIGNADOS;
+      case 'EN CURSO':
+      case RECLAMO_ESTADOS.EN_CURSO: return RECLAMO_ESTADOS.EN_CURSO;
       case RECLAMO_ESTADOS.FINALIZADO: return RECLAMO_ESTADOS.FINALIZADO;
       default: return null;
     }
   }
 
   private estadoEtiqueta(estado: EstadoReclamo): string {
-    return estado.charAt(0) + estado.slice(1).toLowerCase();
+    return RECLAMO_ESTADO_ETIQUETAS[estado];
+  }
+
+  /** El contrato del backend conserva ASIGNADO aunque la UI lo llama EN CURSO. */
+  private toEstadoBackend(estado: EstadoReclamo): string {
+    return estado === RECLAMO_ESTADOS.EN_CURSO ? 'ASIGNADO' : estado;
   }
 }

@@ -13,7 +13,7 @@ import { EstadoReclamo, RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../
 export class ReclamosFiltrosComponent {
   readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  readonly estados: EstadoReclamo[] = [RECLAMO_ESTADOS.RECIBIDOS, RECLAMO_ESTADOS.ASIGNADOS, RECLAMO_ESTADOS.FINALIZADO];
+  readonly estados: EstadoReclamo[] = [RECLAMO_ESTADOS.RECIBIDOS, RECLAMO_ESTADOS.EN_CURSO, RECLAMO_ESTADOS.FINALIZADO];
   readonly selected = signal<EstadoReclamo[]>([]);
 
   constructor() {

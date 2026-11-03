@@ -5,7 +5,6 @@ import { BACKEND_ENDPOINTS } from '../endpoints/backend.endpoints';
 import { ApiResponse } from '../interfaces/api-response.interface';
 import { CrearReclamoPayload, ReclamoBackend } from '../interfaces/reclamo.interface';
 import { Servicio } from '../interfaces/servicio.interface';
-import { Cliente } from '../interfaces/cliente.interface';
 
 const JSON_HEADERS = new HttpHeaders({ 'Content-Type': 'application/json' });
 
@@ -22,12 +21,6 @@ export class ReclamosApiService {
 
   obtenerServicios(): Observable<Servicio[] | null> {
     return this.http.get<ApiResponse<Servicio[]>>(BACKEND_ENDPOINTS.servicios.base, {
-      headers: JSON_HEADERS,
-    }).pipe(map(response => response.data));
-  }
-
-  obtenerClientes(): Observable<Cliente[] | null> {
-    return this.http.get<ApiResponse<Cliente[]>>(BACKEND_ENDPOINTS.usuario.base, {
       headers: JSON_HEADERS,
     }).pipe(map(response => response.data));
   }

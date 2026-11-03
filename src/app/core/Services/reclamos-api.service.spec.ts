@@ -39,14 +39,6 @@ describe('ReclamosApiService', () => {
     detail.flush({ codigo: 200, mensaje: 'OK', data: { serCodigo: '2', serDescri: 'Energía' } });
   });
 
-  it('gets the selectable clients as response data', () => {
-    service.obtenerClientes().subscribe(clients => expect(clients?.[0].usuNombre).toBe('Cliente de prueba'));
-    const request = http.expectOne('http://localhost:7500/usuarios');
-    expect(request.request.method).toBe('GET');
-    expect(request.request.headers.get('Content-Type')).toBe('application/json');
-    request.flush({ codigo: 200, mensaje: 'OK', data: [{ usuCodigo: 19, usuNombre: 'Cliente de prueba' }] });
-  });
-
   it('rejects an invalid service id before creating a request', () => {
     expect(() => service.obtenerServicioPorId(0)).toThrowError('El id del servicio debe ser un entero positivo');
   });

@@ -11,6 +11,9 @@ export const BACKEND_ENDPOINTS = {
   usuario: {
     base: `${baseUrl}/usuarios`,
   },
+  clientes: {
+    buscar: `${baseUrl}/clientes/buscar`,
+  },
   reclamos: {
     base: `${baseUrl}/reclamos`,
     byId: (id: string) => `${baseUrl}/reclamos/${encodeURIComponent(id)}`,
