@@ -6,7 +6,12 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "preng": "node scripts/check-node.cjs",
+    "prestart": "node scripts/check-node.cjs",
+    "prebuild": "node scripts/check-node.cjs",
+    "prewatch": "node scripts/check-node.cjs",
+    "pretest": "node scripts/check-node.cjs"
   },
   "prettier": {
     "printWidth": 100,
@@ -45,5 +50,8 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "typescript": "~5.9.2"
+  },
+  "engines": {
+    "node": ">=24.22.1 <25"
   }
 }
