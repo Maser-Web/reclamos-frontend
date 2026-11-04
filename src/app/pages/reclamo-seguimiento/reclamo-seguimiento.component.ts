@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { catchError, forkJoin, of } from 'rxjs';
 import { AppButtonComponent, AppHeaderComponent, AppIconComponent } from '../../core/components/ui';
 import { EstadoReclamo, RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/reclamo-estados';
 import { ReclamosService } from '../../core/Services/reclamos.service';
-import { Seguimiento } from '../../core/interfaces/models';
+import { ReclamoVista, Seguimiento } from '../../core/interfaces/models';
 
 type StepperItem = { estado: EstadoReclamo; label: string; event?: Seguimiento; completed: boolean; current: boolean };
 
@@ -53,13 +54,34 @@ export class ReclamoSeguimientoComponent {
       if (estado) eventByState.set(estado, event);
     }
     const current = [...eventByState.keys()].at(-1) ?? RECLAMO_ESTADOS.RECIBIDOS;
-    return [RECLAMO_ESTADOS.RECIBIDOS, RECLAMO_ESTADOS.EN_CURSO, RECLAMO_ESTADOS.FINALIZADO].map(estado => ({ estado, label: RECLAMO_ESTADO_ETIQUETAS[estado], event: eventByState.get(estado), completed: eventByState.has(estado), current: current === estado }));
+    return [RECLAMO_ESTADOS.RECIBIDOS, RECLAMO_ESTADOS.EN_CURSO, RECLAMO_ESTADOS.FINALIZADO].map(estado => ({
+      estado,
+      label: RECLAMO_ESTADO_ETIQUETAS[estado],
+      event: eventByState.get(estado),
+      // El estado inicial activo conserva el indicador de estado actual, no el check de un paso cerrado.
+      completed: eventByState.has(estado) && !(estado === RECLAMO_ESTADOS.RECIBIDOS && current === estado),
+      current: current === estado,
+    }));
   });
 
   constructor() {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
-    this.reclamosService.historial(id).subscribe({
-      next: historial => { this.historial.set([...historial].sort((a, b) => this.dateValue(b.fecha) - this.dateValue(a.fecha))); this.loading.set(false); },
+    forkJoin({
+      reclamo: this.reclamosService.detail(id).pipe(catchError(() => of(null))),
+      historial: this.reclamosService.historial(id).pipe(catchError(() => {
+        this.error.set(true);
+        return of([]);
+      })),
+    }).subscribe({
+      next: ({ reclamo, historial }) => {
+        const movimientos = reclamo
+          ? historial.length
+            ? [this.receivedEvent(reclamo), ...historial.filter(event => event.tipo !== 'creado')]
+            : this.trackingEventsFromClaim(reclamo)
+          : historial;
+        this.historial.set([...movimientos].sort((a, b) => this.dateValue(b.fecha) - this.dateValue(a.fecha)));
+        this.loading.set(false);
+      },
       error: () => { this.error.set(true); this.loading.set(false); },
     });
   }
@@ -76,6 +98,50 @@ export class ReclamoSeguimientoComponent {
   }
 
   back(): void { void this.router.navigate(['/reclamos', this.route.snapshot.paramMap.get('id') ?? '']); }
+
+  private receivedEvent(reclamo: ReclamoVista): Seguimiento {
+    return {
+      id: `recibido-${reclamo.id}`,
+      reclamoId: reclamo.id,
+      titulo: 'Estado Recibido',
+      fecha: reclamo.fechaCreacion,
+      hora: reclamo.horaCreacion ?? undefined,
+      tipo: 'creado',
+    };
+  }
+
+  /**
+   * Algunos reclamos anteriores no tienen movimientos en el historial. En ese
+   * caso se conservan los mismos pasos visuales usando las fechas reales del
+   * reclamo, en lugar de mostrar estados pendientes que ya fueron realizados.
+   */
+  private trackingEventsFromClaim(reclamo: ReclamoVista): Seguimiento[] {
+    const events = [this.receivedEvent(reclamo)];
+
+    if (reclamo.fechaDerivacion) {
+      events.push({
+        id: `asignado-${reclamo.id}`,
+        reclamoId: reclamo.id,
+        titulo: 'Estado Asignado',
+        fecha: reclamo.fechaDerivacion,
+        hora: reclamo.horaDerivacion ?? undefined,
+        tipo: 'asignado',
+      });
+    }
+
+    if (reclamo.fechaFinalizacion) {
+      events.push({
+        id: `finalizado-${reclamo.id}`,
+        reclamoId: reclamo.id,
+        titulo: 'Estado Finalizado',
+        fecha: reclamo.fechaFinalizacion,
+        hora: reclamo.horaFinalizacion ?? undefined,
+        tipo: 'cerrado',
+      });
+    }
+
+    return events;
+  }
 
   private estadoFromEvent(event: Seguimiento): EstadoReclamo | null {
     switch (event.tipo) {

@@ -30,6 +30,11 @@ export interface ReclamoVista {
   responsableId: string | null;
   responsableNombre: string | null;
   fechaCreacion: string;
+  horaCreacion: string | null;
+  fechaDerivacion: string | null;
+  horaDerivacion: string | null;
+  fechaFinalizacion: string | null;
+  horaFinalizacion: string | null;
   fechaActualizacion: string;
   archivos: Archivo[];
 }

@@ -99,6 +99,11 @@ export class ReclamosService {
       responsableId: reclamo.recDerivo,
       responsableNombre: reclamo.usuNombreDerivado ?? null,
       fechaCreacion,
+      horaCreacion: reclamo.recHora,
+      fechaDerivacion: reclamo.recFechaD,
+      horaDerivacion: reclamo.recHoraD,
+      fechaFinalizacion: reclamo.recFechaF,
+      horaFinalizacion: reclamo.recHoraF,
       fechaActualizacion: reclamo.recFechaF ?? reclamo.recFechaD ?? reclamo.recFecalta ?? fechaCreacion,
       archivos: [],
     };
