@@ -6,7 +6,7 @@ import { AppButtonComponent, AppHeaderComponent } from '../../core/components/ui
   standalone: true,
   imports: [AppHeaderComponent, AppButtonComponent],
   template: `<app-header title="Agregar comentario" [showBack]="true" (back)="back()"/><section class="page notice"><h2>Acción no disponible</h2><p>El backend actual no expone un endpoint para comentarios. El comentario enviado al finalizar tampoco es persistido por el servidor.</p><app-button label="Volver al reclamo" (click)="back()"/></section>`,
-  styles: `.notice{display:grid;gap:18px}.notice p{color:var(--color-text-secondary);line-height:1.5}`,
+  styleUrl: './reclamo-comentario.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReclamoComentarioComponent {

@@ -7,7 +7,7 @@ import { EstadoReclamo, RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../
   standalone: true,
   imports: [AppHeaderComponent, AppButtonComponent],
   template: `<app-header title="Filtrar reclamos" [showBack]="true" (back)="back()"/><section class="page"><form class="filters" (submit)="apply($event)"><h2>Estado</h2>@for(s of estados;track s){<label><input type="checkbox" [value]="s" (change)="toggleEstado(s,$any($event.target).checked)" [checked]="selected().includes(s)"/> {{label(s)}}</label>}<p>El backend actual no ofrece filtros por área ni por fecha. El filtro de estado se aplica sobre la página cargada.</p><app-button type="submit" label="Aplicar filtros"/><app-button label="Limpiar" variant="secondary" (click)="clear()"/></form></section>`,
-  styles: `.filters{display:grid;gap:14px}.filters h2{margin:12px 0 0}.filters label{font-size:var(--font-md);display:flex;gap:12px;align-items:center}.filters p{color:var(--color-text-secondary);line-height:1.5}@media(max-width:767px){.filters label{min-height:48px;padding:0 var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface)}.filters input[type=checkbox]{width:22px;height:22px;flex:0 0 auto;accent-color:#f6d000}}`,
+  styleUrl: './reclamos-filtros.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReclamosFiltrosComponent {

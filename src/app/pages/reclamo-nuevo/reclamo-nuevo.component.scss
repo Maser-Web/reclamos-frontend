@@ -1,0 +1,180 @@
+@use '../../../styles/breakpoints' as *;
+@use '../../../styles/tokens' as *;
+.new-claim-form {
+  display:grid;
+  gap:10px
+}
+.new-claim-form header {
+  margin-bottom:12px
+}
+.new-claim-form h2 {
+  margin:0 0 6px;
+  font-size:var(--font-xl)
+}
+.new-claim-form header p {
+  margin:0;
+  color:var(--color-text-secondary);
+  font-size:var(--font-sm)
+}
+.new-claim-form label {
+  margin-top:8px;
+  font-weight:800
+}
+.new-claim-form input[type=search] {
+  width:100%;
+  box-sizing:border-box;
+  border:1px solid #d8e0ed;
+  border-radius:12px;
+  padding:13px 15px;
+  background:#fff;
+  color:var(--color-text);
+  font:600 15px var(--font-family);
+  outline:0;
+  transition:border-color .18s,box-shadow .18s
+}
+.new-claim-form input[type=search]:focus {
+  border-color:#f1c900;
+  box-shadow:0 0 0 4px #ffe88980
+}
+.field-help {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  min-height:20px;
+  color:var(--color-text-secondary);
+  font-size:var(--font-xs)
+}
+.field-help b,.field-error {
+  margin:0;
+  color:var(--color-new);
+  font-weight:700
+}
+.status {
+  margin:0;
+  padding:13px;
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-md);
+  color:var(--color-text-secondary);
+  font-size:var(--font-sm)
+}
+.status.error {
+  display:flex;
+  align-items:center;
+  gap:9px;
+  border-color:#f3cccc;
+  color:#a51d25;
+  background:#fffafa
+}
+.status.error span {
+  flex:1
+}
+.client-results {
+  display:grid;
+  gap:5px;
+  max-height:248px;
+  margin:2px 0 0;
+  padding:6px;
+  overflow:auto;
+  list-style:none;
+  border:1px solid #dbe3ef;
+  border-radius:13px;
+  background:#fff;
+  box-shadow:0 8px 22px #263d6712
+}
+.client-results li {
+  min-width:0
+}
+.client-results button {
+  display:flex;
+  width:100%;
+  align-items:center;
+  gap:10px;
+  border:0;
+  border-radius:9px;
+  padding:11px 12px;
+  background:transparent;
+  color:#17233e;
+  font:600 14px var(--font-family);
+  text-align:left;
+  cursor:pointer;
+  transition:background .15s,color .15s
+}
+.client-results button:before {
+  content:'Cliente';
+  flex:0 0 auto;
+  border-radius:999px;
+  padding:4px 7px;
+  background:#fff1b0;
+  color:#765a00;
+  font-size:10px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.04em
+}
+.client-results button:hover,.client-results button:focus-visible {
+  background:#fff8d8;
+  color:#071538;
+  outline:0
+}
+.client-results button:active {
+  background:#ffe98a
+}
+.load-more {
+  justify-self:center;
+  border:0;
+  border-radius:9px;
+  padding:9px 14px;
+  background:#f2f5fa;
+  color:#44536e;
+  font:800 13px var(--font-family);
+  cursor:pointer
+}
+.load-more:hover:not(:disabled) {
+  background:#ffe889;
+  color:#1b2945
+}
+.load-more:disabled {
+  cursor:wait;
+  opacity:.65
+}
+.new-claim-form app-button {
+  margin-top:14px
+}
+@media(max-width:767px) {
+  .new-claim-form input[type=search] {
+    min-height:48px;
+    font-size:16px
+  }
+  .client-results {
+    max-height:min(248px,40dvh);
+    overscroll-behavior:contain
+  }
+  .client-results button {
+    min-height:48px;
+    font-size:15px
+  }
+  .client-results button:before {
+    font-size:11px
+  }
+  .load-more {
+    min-height:44px;
+    padding:0 18px;
+    font-size:14px
+  }
+  .field-help {
+    font-size:.75rem
+  }
+  .status {
+    font-size:.875rem
+  }
+  .new-claim-form app-button {
+    position:sticky;
+    bottom:calc(var(--space-3) + env(safe-area-inset-bottom));
+    z-index:2
+  }
+}
+
+@include mobile {
+  .new-claim-form h2 { font-size: clamp(1.25rem, 6vw, 1.5rem); }
+  .status.error button { min-height: $tap-min; padding-inline: 12px; }
+}

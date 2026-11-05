@@ -9,7 +9,7 @@ import { AvisosService } from '../../../core/Services/avisos.service';
   imports: [RouterLink, RouterLinkActive, LucideAngularModule],
   template: `
     <header class="reclamos-navbar">
-      <a class="brand-link" routerLink="/reclamos" aria-label="Ir a reclamos"><img src="assets/logo.png" alt="Coronel" /></a>
+      <a class="brand-link" routerLink="/reclamos" aria-label="Ir a reclamos"><img src="assets/logo.png" width="917" height="375" alt="Coronel" /></a>
       <nav aria-label="Navegación principal">
         <a routerLink="/reclamos" routerLinkActive="active">
           <lucide-icon [img]="fileIcon" [size]="18" [strokeWidth]="2.4" />
@@ -29,14 +29,12 @@ import { AvisosService } from '../../../core/Services/avisos.service';
     </header>
     <header class="mobile-navbar">
       <button type="button" class="mobile-back" [class.hidden]="!showBack()" (click)="back.emit()" aria-label="Volver"><lucide-icon [img]="backIcon" [size]="24" [strokeWidth]="2.4" /></button>
-      <a class="mobile-brand" routerLink="/reclamos" aria-label="Ir al inicio"><img src="assets/logo.png" alt="Coronel" /></a>
+      <a class="mobile-brand" routerLink="/reclamos" aria-label="Ir al inicio"><img src="assets/logo.png" width="917" height="375" alt="Coronel" /></a>
       <h1>{{ title() }}</h1>
       <button type="button" class="mobile-logout" aria-label="Cerrar sesión" (click)="logoutRequested.emit()"><lucide-icon [img]="logoutIcon" [size]="20" [strokeWidth]="2.2" /></button>
     </header>
   `,
-  styles: `
-    :host{display:block}.reclamos-navbar{height:82px;display:flex;align-items:center;gap:68px;padding:0 3.7%;background:linear-gradient(105deg,#ffdf20,#ffd400)}.brand-link{display:flex;width:101px;height:auto;cursor:pointer;user-select:none}.brand-link img{width:100%;height:auto;-webkit-user-drag:none;user-select:none}.reclamos-navbar nav{display:flex;align-items:center;gap:5px;flex:1}.reclamos-navbar nav a{height:47px;display:flex;align-items:center;gap:10px;padding:0 18px;border-radius:11px;color:#111b36;font-size:14px;font-weight:800;text-decoration:none}.reclamos-navbar nav a.active{background:#fff5c2;box-shadow:0 2px 5px rgb(181 144 22 / 15%)}.notification-link{position:relative;display:flex;align-items:center;gap:10px}.notification-link b{min-width:17px;height:17px;display:grid;place-items:center;margin-left:-4px;padding:0 4px;border-radius:99px;background:#e5484d;color:#fff;font-size:10px}.user-actions{display:flex;align-items:center;gap:12px;white-space:nowrap}.logout-button{width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:10px;background:transparent;color:#0b1837}.logout-button:hover{background:rgb(255 255 255 / 30%)}.avatar{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:#122555;color:#fff;font-size:13px;font-weight:800}.user-actions strong{font-size:14px}.mobile-navbar{display:none}@media(max-width:767px){.reclamos-navbar{display:none}.mobile-navbar{height:var(--header-height);display:grid;grid-template-columns:44px 44px minmax(0,1fr) 44px;align-items:center;gap:7px;padding:env(safe-area-inset-top) var(--space-3) 0;background:var(--color-primary);color:var(--color-text);box-sizing:content-box}.mobile-back,.mobile-logout{width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:9px;background:transparent;color:inherit}.mobile-brand{width:43px}.mobile-brand img{display:block;width:100%;height:auto}.mobile-navbar h1{overflow:hidden;margin:0;font-size:clamp(1.0625rem,5vw,1.25rem);font-weight:800;letter-spacing:-.03em;text-overflow:ellipsis;white-space:nowrap}.hidden{visibility:hidden}}@media(max-width:390px){.mobile-navbar{grid-template-columns:44px 40px minmax(0,1fr) 44px;gap:2px;padding-inline:8px}.mobile-brand{width:36px}}@media(max-width:1000px) and (min-width:768px){.reclamos-navbar{gap:26px}.brand-link{width:90px}.user-actions strong{display:none}}
-  `,
+  styleUrl: './reclamos-navbar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReclamosNavbarComponent {

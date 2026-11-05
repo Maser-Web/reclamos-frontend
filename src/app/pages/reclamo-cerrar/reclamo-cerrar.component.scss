@@ -1,0 +1,39 @@
+.close-form {
+  display:grid;
+  gap:26px
+}
+.close-form label {
+  font-weight:800;
+  display:grid;
+  gap:8px
+}
+.close-form select,.close-form textarea {
+  font:inherit;
+  padding:14px;
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-md)
+}
+.close-form textarea {
+  min-height:150px
+}
+.notice {
+  margin:0;
+  color:var(--color-text-secondary);
+  font-size:var(--font-sm);
+  line-height:1.4
+}
+@media(max-width:767px) {
+  .close-form {
+    gap:20px
+  }
+  .close-form select,.close-form textarea {
+    font-size:16px
+  }
+  .close-form select {
+    min-height:48px
+  }
+  .close-form app-button {
+    position:sticky;
+    bottom:calc(var(--space-3) + env(safe-area-inset-bottom))
+  }
+}

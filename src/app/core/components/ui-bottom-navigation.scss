@@ -1,0 +1,123 @@
+:host {
+  display:block
+}
+.bottom-nav {
+  position:fixed;
+  z-index:10;
+  right:10px;
+  bottom:calc(10px + env(safe-area-inset-bottom));
+  left:10px;
+  height:92px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:center;
+  padding:0 12px;
+  border:1px solid rgb(16 24 40 / 7%);
+  border-radius:27px;
+  background:rgb(255 255 255 / 96%);
+  box-shadow:0 12px 30px rgb(16 24 40 / 14%);
+  backdrop-filter:blur(16px)
+}
+.nav-item,.create-link {
+  min-width:0;
+  height:72px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  border:0;
+  background:transparent;
+  color:#5a677d;
+  font:700 11px var(--font-family);
+  line-height:1.1;
+  text-decoration:none;
+  white-space:nowrap
+}
+.nav-item app-icon {
+  color:currentColor
+}
+.nav-item.active {
+  margin:0 3px;
+  border-radius:18px;
+  background:var(--color-primary-soft);
+  color:#17213b
+}
+.create-link {
+  position:relative;
+  align-self:start;
+  height:95px;
+  padding-top:0;
+  color:#17213b;
+  font-size:11px;
+  font-weight:800
+}
+.create-icon {
+  width:67px;
+  height:67px;
+  display:grid;
+  place-items:center;
+  margin-top:-25px;
+  margin-bottom:3px;
+  border-radius:23px;
+  background:linear-gradient(145deg,#ffdf24,#f6ca00);
+  color:#17213b;
+  box-shadow:0 12px 22px rgb(194 150 0 / 25%)
+}
+.create-link.active .create-icon {
+  box-shadow:0 0 0 4px #fff,0 12px 22px rgb(194 150 0 / 25%)
+}
+.notification-icon {
+  position:relative;
+  height:27px;
+  display:grid;
+  place-items:center
+}
+.notification-icon b {
+  position:absolute;
+  top:-8px;
+  right:-12px;
+  min-width:16px;
+  height:16px;
+  display:grid;
+  place-items:center;
+  padding:0 3px;
+  border:1.5px solid #fff;
+  border-radius:99px;
+  background:#e5484d;
+  color:#fff;
+  font:800 10px var(--font-family);
+  box-sizing:border-box
+}
+@media(min-width:768px) {
+  :host {
+    display:none
+  }
+}
+@media(max-width:390px) {
+  .bottom-nav {
+    right:6px;
+    bottom:calc(6px + env(safe-area-inset-bottom));
+    left:6px;
+    height:84px;
+    border-radius:23px
+  }
+  .nav-item,.create-link {
+    font-size:11px
+  }
+  .nav-item {
+    height:66px
+  }
+  .create-link {
+    height:88px
+  }
+  .create-icon {
+    width:59px;
+    height:59px;
+    margin-top:-22px;
+    border-radius:20px
+  }
+  .notification-icon b {
+    right:-10px
+  }
+}

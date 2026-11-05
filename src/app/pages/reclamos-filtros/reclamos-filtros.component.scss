@@ -1,0 +1,32 @@
+.filters {
+  display:grid;
+  gap:14px
+}
+.filters h2 {
+  margin:12px 0 0
+}
+.filters label {
+  font-size:var(--font-md);
+  display:flex;
+  gap:12px;
+  align-items:center
+}
+.filters p {
+  color:var(--color-text-secondary);
+  line-height:1.5
+}
+@media(max-width:767px) {
+  .filters label {
+    min-height:48px;
+    padding:0 var(--space-3);
+    border:1px solid var(--color-border);
+    border-radius:var(--radius-md);
+    background:var(--color-surface)
+  }
+  .filters input[type=checkbox] {
+    width:22px;
+    height:22px;
+    flex:0 0 auto;
+    accent-color:#f6d000
+  }
+}

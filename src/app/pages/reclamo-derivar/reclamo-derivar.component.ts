@@ -6,7 +6,7 @@ import { AppButtonComponent, AppHeaderComponent } from '../../core/components/ui
   standalone: true,
   imports: [AppHeaderComponent, AppButtonComponent],
   template: `<app-header title="Derivar reclamo" [showBack]="true" (back)="back()"/><section class="page notice"><h2>Acción no disponible</h2><p>El backend actual no ofrece un endpoint para derivar o asignar responsables. No se realizará ningún cambio local para evitar mostrar una asignación que no quedó guardada.</p><app-button label="Volver al reclamo" (click)="back()"/></section>`,
-  styles: `.notice{display:grid;gap:18px}.notice p{color:var(--color-text-secondary);line-height:1.5}`,
+  styleUrl: './reclamo-derivar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReclamoDerivarComponent {

@@ -1,0 +1,9 @@
+@use '../../../styles/breakpoints' as *;
+@use '../../../styles/tokens' as *;
+.loading {
+  padding:32px;
+  text-align:center;
+  color:var(--color-text-secondary)
+}
+
+@include mobile { .loading { padding: var(--space-6) var(--space-4); } }

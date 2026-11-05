@@ -1,0 +1,11 @@
+@use '../../../styles/breakpoints' as *;
+@use '../../../styles/tokens' as *;
+.upload {
+  display:block;
+  padding:14px;
+  border:1px dashed var(--color-border);
+  border-radius:var(--radius-md);
+  font-weight:700
+}
+
+@include mobile { .upload { min-height: $tap-min; } }
