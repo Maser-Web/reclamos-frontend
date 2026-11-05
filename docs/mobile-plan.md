@@ -51,3 +51,7 @@
 - ¿Querés conservar el hero amarillo grande de `/reclamos` en móvil (decorativo) o lo compacto?
 - ¿Agrego ESLint (`ng add angular-eslint`) para la Fase 3, o solo build/test?
 - ¿Los cambios del working tree actuales (angular.json, Dockerfile, nginx.conf, environment.production.ts) son tuyos y los dejo fuera de mis commits? (asumo que sí)
+
+## Estado (Fase 2 completada)
+Resuelto: tokens y mixins (`src/styles/_breakpoints.scss`, `_tokens.scss`), estilos inline migrados a `.scss` por componente (CSS verificado equivalente con Sass), safe-areas, inputs 16px, targets 44px, foco visible, contraste en textos pequeños, `width/height` en logos, `content-visibility` en la lista, reduced-motion.
+Pendiente: verificación visual en dispositivo real; `ng test` no ejecutado (requiere Chrome); `NgOptimizedImage` no adoptado; accesibilidad funcional de `app-confirm-dialog` (Escape/foco) por requerir lógica.
