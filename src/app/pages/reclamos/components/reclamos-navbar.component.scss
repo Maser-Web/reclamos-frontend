@@ -142,6 +142,17 @@
     text-overflow:ellipsis;
     white-space:nowrap
   }
+  .mobile-navbar.minimal {
+    grid-template-columns:44px minmax(0,1fr) 44px
+  }
+  .mobile-navbar.minimal h1 {
+    display:none
+  }
+  .mobile-navbar.minimal .mobile-brand {
+    grid-column:2;
+    justify-self:center;
+    width:118px
+  }
   .hidden {
     visibility:hidden
   }
@@ -154,6 +165,9 @@
   }
   .mobile-brand {
     width:36px
+  }
+  .mobile-navbar.minimal .mobile-brand {
+    width:102px
   }
 }
 @media(max-width:1000px) and (min-width:768px) {

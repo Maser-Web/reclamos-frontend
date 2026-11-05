@@ -56,8 +56,9 @@ export class ReclamoSeguimientoComponent {
       estado,
       label: RECLAMO_ESTADO_ETIQUETAS[estado],
       event: eventByState.get(estado),
-      // El estado inicial activo conserva el indicador de estado actual, no el check de un paso cerrado.
-      completed: eventByState.has(estado) && !(estado === RECLAMO_ESTADOS.RECIBIDOS && current === estado),
+      // El paso inicial representa una recepción ya confirmada, incluso cuando
+      // también es el estado actual: debe conservar su check de progreso.
+      completed: eventByState.has(estado),
       current: current === estado,
     }));
   });

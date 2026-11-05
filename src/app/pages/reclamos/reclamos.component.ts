@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/Services/auth.service';
 import { ReclamosService } from '../../core/Services/reclamos.service';
-import { Reclamo } from '../../core/interfaces/models';
+import { NotificationService } from '../../core/Services/notification.service';
+import { PrioridadReclamo, Reclamo } from '../../core/interfaces/models';
 import { EstadoReclamo, RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/reclamo-estados';
 import { ReclamosFiltersComponent, ReclamosPriorityCounts, ReclamosStatusCounts } from './components/reclamos-filters.component';
 import { ReclamosNavbarComponent } from './components/reclamos-navbar.component';
@@ -17,8 +18,8 @@ type StatusFilter = 'todos' | EstadoReclamo;
     <main class="claims-page">
       <app-reclamos-navbar [usuarioNombre]="auth.usuarioNombre()" (logoutRequested)="logout()" />
       <section class="mobile-hero">
-        <div><h1>Gestión de reclamos</h1><p>Gestioná y hacé seguimiento<br />de todos tus reclamos.</p></div>
-        <aside aria-hidden="true"><i></i><b></b><b></b><b></b><b></b></aside><strong aria-hidden="true"><app-icon name="clipboard-list" [size]="38" /></strong>
+        <div><h1>MaserLink</h1><p>Gestión y resolución<br />de reclamos</p></div>
+        <img src="assets/reclamo-clipboard.png" alt="" aria-hidden="true" />
       </section>
       <section class="workspace">
         <app-reclamos-filters
@@ -36,10 +37,10 @@ type StatusFilter = 'todos' | EstadoReclamo;
           @if (claims().length) {
             <div class="headings"><span>#</span><span>Reclamo</span><span>Cliente</span><span>Estado</span><span>Prioridad</span><span>Fecha</span><span>Acciones</span></div>
             <div class="claim-list">@for (claim of claims(); track claim.id) {
-              <button class="claim" [class]="claim.estado" type="button" (click)="open(claim)">
-                <i class="rail"></i><strong class="number">{{ claim.numero }}</strong><div class="subject"><b>{{ claim.asunto }}</b><span>{{ claim.descripcion }}</span></div><div class="client"><i>{{ initials(client(claim)) }}</i><span><b>{{ client(claim) }}</b><small>ID: {{ claim.clienteId || '—' }}</small></span></div><span class="state">{{ statusLabel(claim.estado) }}</span><span class="priority" [class]="claim.prioridad"><i></i>{{ priorityLabel(claim.prioridad) }}</span><time><app-icon name="calendar-days" [size]="15"/><span>{{ displayDate(claim.fechaActualizacion) }}<small>{{ displayTime(claim.fechaActualizacion) }}</small></span></time><span class="actions" aria-label="Ver reclamo"><app-icon name="chevron-right" [size]="21"/></span>
-                <div class="m-top"><span class="state">{{ statusLabel(claim.estado) }}</span><time>{{ displayDate(claim.fechaActualizacion) }}</time></div><div class="m-body"><strong>{{ claim.numero }}</strong><b>{{ claim.asunto }}</b><span>Cliente: {{ client(claim) }}</span><small><app-icon name="user-round" [size]="15"/>{{ claim.responsableId || 'Sin asignar' }}</small></div><div class="m-actions"><app-icon name="paperclip" [size]="16"/>{{ attachmentCount(claim) }} <app-icon name="chevron-right" [size]="27"/></div>
-              </button>
+              <article class="claim" [class]="claim.estado" role="link" tabindex="0" (click)="open(claim)" (keydown.enter)="open(claim)" (keydown.space)="open(claim); $event.preventDefault()">
+                <i class="rail"></i><strong class="number">{{ claim.numero }}</strong><div class="subject"><b>{{ claim.asunto }}</b><span>{{ claim.descripcion }}</span></div><div class="client"><span><b>{{ client(claim) }}</b></span></div><span class="state">{{ statusLabel(claim.estado) }}</span><span class="priority" [class]="claim.prioridad"><i></i>{{ priorityLabel(claim.prioridad) }}</span><time><app-icon name="calendar-days" [size]="15"/><span>{{ displayDate(claim.fechaActualizacion) }}<small>{{ displayTime(claim.fechaActualizacion) }}</small></span></time><span class="actions"><button type="button" class="action-button action-priority" aria-label="Asignar prioridad" title="Asignar prioridad" (click)="openPriority(claim, $event)"><app-icon name="flag" [size]="20"/></button><button type="button" class="action-button action-detail" aria-label="Ver detalle del reclamo" title="Ver detalle" (click)="open(claim, $event)"><app-icon name="chevron-right" [size]="24"/></button></span>
+                <div class="m-top"><span class="state">{{ statusLabel(claim.estado) }}</span><time>{{ displayDate(claim.fechaActualizacion) }}</time></div><div class="m-body"><strong>{{ claim.numero }}</strong><b>{{ claim.asunto }}</b><span>Cliente: {{ client(claim) }}</span><small><app-icon name="user-round" [size]="15"/>{{ claim.responsableNombre || claim.responsableId || 'Sin asignar' }}</small></div><div class="m-actions"><app-icon name="paperclip" [size]="16"/>{{ attachmentCount(claim) }}<button type="button" aria-label="Ver detalle del reclamo" (click)="open(claim)"><app-icon name="chevron-right" [size]="27"/></button></div>
+              </article>
             }</div>
             <nav class="pagination" aria-label="Paginación de reclamos">
               <span>Mostrando {{ claims().length }} reclamos · Página {{ page() + 1 }}</span>
@@ -53,6 +54,7 @@ type StatusFilter = 'todos' | EstadoReclamo;
           } @else {<section class="empty"><strong>Sin reclamos para mostrar</strong><span>Probá modificando la búsqueda o los filtros.</span></section>}
         </section>
       </section>
+    @if (priorityModalOpen()) {<div class="priority-overlay" (click)="closePriorityModal()"><section class="priority-modal" role="dialog" aria-modal="true" aria-labelledby="priority-title" (click)="$event.stopPropagation()"><header><h2 id="priority-title">Asignar prioridad</h2><button type="button" aria-label="Cerrar" (click)="closePriorityModal()"><app-icon name="x" [size]="21"/></button></header><fieldset><legend>Seleccione la prioridad del reclamo</legend>@for (option of priorityOptions; track option.value) {<label><input type="radio" name="priority" [value]="option.value" [checked]="selectedPriority() === option.value" (change)="selectedPriority.set(option.value)"/><span>{{ option.label }}</span></label>}</fieldset><button class="priority-submit" type="button" [disabled]="prioritySaving()" (click)="assignPriority()">{{ prioritySaving() ? 'Asignando prioridad…' : 'Asignar prioridad' }}</button></section></div>}
     </main>
   `,
   styleUrl: './reclamos.component.scss',
@@ -62,6 +64,7 @@ export class ReclamosComponent {
   readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly service = inject(ReclamosService);
+  private readonly notifications = inject(NotificationService);
   readonly auth = inject(AuthService);
   readonly estados = RECLAMO_ESTADOS;
   readonly all = signal<Reclamo[]>([]);
@@ -71,6 +74,11 @@ export class ReclamosComponent {
   readonly page = signal(0);
   readonly loading = signal(false);
   readonly hasNextPage = signal(false);
+  readonly priorityModalOpen = signal(false);
+  readonly prioritySaving = signal(false);
+  readonly selectedPriority = signal<PrioridadReclamo>('media');
+  readonly priorityClaim = signal<Reclamo | null>(null);
+  readonly priorityOptions: { value: PrioridadReclamo; label: string }[] = [{ value: 'alta', label: 'ALTA' }, { value: 'media', label: 'MEDIA' }, { value: 'baja', label: 'BAJA' }];
   private readonly pageSize = 10;
   private requestId = 0;
   readonly statusOptions = [
@@ -115,8 +123,20 @@ export class ReclamosComponent {
   create(): void { void this.router.navigateByUrl('/reclamos/nuevo'); }
   logout(): void { this.auth.logout(); void this.router.navigateByUrl('/login'); }
   goToFilters(): void { void this.router.navigate(['/reclamos/filtros']); }
-  open(claim: Reclamo): void { void this.router.navigate(['/reclamos', claim.id]); }
-  client(claim: Reclamo): string { return claim.clienteId ? 'Cliente ' + claim.clienteId : 'Cliente sin identificación'; }
+  open(claim: Reclamo, event?: Event): void { event?.stopPropagation(); void this.router.navigate(['/reclamos', claim.id]); }
+  openPriority(claim: Reclamo, event: MouseEvent): void { event.stopPropagation(); this.priorityClaim.set(claim); this.selectedPriority.set(claim.prioridad); this.priorityModalOpen.set(true); }
+  closePriorityModal(): void { this.priorityModalOpen.set(false); this.priorityClaim.set(null); }
+  assignPriority(): void {
+    const claim = this.priorityClaim();
+    if (!claim || this.prioritySaving()) return;
+    const prioridad = this.selectedPriority();
+    this.prioritySaving.set(true);
+    this.service.asignarPrioridad(claim.id, prioridad).subscribe({
+      next: () => { this.all.update(items => items.map(item => item.id === claim.id ? { ...item, prioridad } : item)); this.prioritySaving.set(false); this.closePriorityModal(); void this.notifications.success('Prioridad asignada'); },
+      error: () => { this.prioritySaving.set(false); void this.notifications.error('No se pudo asignar la prioridad', 'Intentá nuevamente.'); },
+    });
+  }
+  client(claim: Reclamo): string { return claim.clienteId || 'Sin identificación'; }
   countFor(status: EstadoReclamo): number { return this.all().filter(item => item.estado === status).length; }
   priorityCount(priority: Reclamo['prioridad']): number { return this.all().filter(item => item.prioridad === priority).length; }
   initials(value: string): string { return value.split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join('').toUpperCase() || 'CL'; }

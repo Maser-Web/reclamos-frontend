@@ -26,6 +26,8 @@ export interface ReclamoBackend {
   recHora: string | null;
   recMotivo: string | null;
   recTcid: string | null;
+  /** Nombre del cliente, disponible al consultar el detalle: GET /reclamos/:id. */
+  cliNombre?: string | null;
   recServicio: number | null;
   recRecibio: string | null;
   recSucursal: number | null;
@@ -34,7 +36,7 @@ export interface ReclamoBackend {
   recPlamov: string | null;
   recEstado: EstadoReclamoBackend | null;
   recDerivo: string | null;
-  /** Disponible al consultar el detalle: GET /reclamos/:id. */
+  /** Nombre del usuario derivado, disponible cuando el backend lo incluye. */
   usuNombreDerivado?: string | null;
   recFechaD: string | null;
   recHoraD: string | null;

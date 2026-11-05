@@ -23,6 +23,8 @@ export const BACKEND_ENDPOINTS = {
       `${baseUrl}/reclamos/${encodeURIComponent(id)}/historial`,
     actualizarEstado: (id: string, estado: string) =>
       `${baseUrl}/reclamos/${encodeURIComponent(id)}/estado/${encodeURIComponent(estado)}`,
+    asignarPrioridad: (id: string) =>
+      `${baseUrl}/reclamos/${encodeURIComponent(id)}/prioridad`,
   },
   servicios: {
     base: `${baseUrl}/servicios`,

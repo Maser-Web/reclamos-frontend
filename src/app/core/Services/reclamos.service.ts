@@ -65,6 +65,16 @@ export class ReclamosService {
     }));
   }
 
+  asignarPrioridad(id: string, prioridad: PrioridadReclamo): Observable<void> {
+    this.assertPositiveInteger(id, 'El id del reclamo debe ser un entero positivo');
+    return this.http.patch<ApiResponse<null>>(
+      BACKEND_ENDPOINTS.reclamos.asignarPrioridad(id),
+      { prioridad: prioridad.toUpperCase() },
+    ).pipe(map(response => {
+      if (response.codigo < 200 || response.codigo >= 300) throw new Error(response.mensaje);
+    }));
+  }
+
   private paginationParams(query: ReclamosPaginationQuery): HttpParams {
     const limit = query.limit ?? '10';
     const offset = query.offset ?? '0';
@@ -89,12 +99,12 @@ export class ReclamosService {
     const fechaCreacion = reclamo.recFecha ?? reclamo.recFecalta ?? new Date(0).toISOString();
     return {
       id: reclamo.recCodigo,
-      numero: `#${reclamo.recCodigo}`,
+      numero: `${reclamo.recCodigo}`,
       asunto: reclamo.recMotivo?.trim() || `Reclamo ${reclamo.recCodigo}`,
       descripcion: reclamo.recMotivo?.trim() || 'Sin descripción disponible.',
       estado,
       prioridad: this.toPrioridadVista(reclamo.recPrioridad),
-      clienteId: reclamo.recTcid ?? '',
+      clienteId: reclamo.cliNombre ?? '',
       areaId: null,
       responsableId: reclamo.recDerivo,
       responsableNombre: reclamo.usuNombreDerivado ?? null,

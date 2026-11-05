@@ -27,7 +27,7 @@ import { AvisosService } from '../../../core/Services/avisos.service';
         </button>
       </div>
     </header>
-    <header class="mobile-navbar">
+    <header class="mobile-navbar" [class.minimal]="minimalMobile()">
       <button type="button" class="mobile-back" [class.hidden]="!showBack()" (click)="back.emit()" aria-label="Volver"><lucide-icon [img]="backIcon" [size]="24" [strokeWidth]="2.4" /></button>
       <a class="mobile-brand" routerLink="/reclamos" aria-label="Ir al inicio"><img src="assets/logo.png" width="917" height="375" alt="Coronel" /></a>
       <h1>{{ title() }}</h1>
@@ -42,6 +42,7 @@ export class ReclamosNavbarComponent {
   readonly usuarioNombre = input<string | null>(null);
   readonly title = input('Reclamos');
   readonly showBack = input(false);
+  readonly minimalMobile = input(false);
   readonly logoutRequested = output<void>();
   readonly back = output<void>();
   readonly bellIcon = Bell;

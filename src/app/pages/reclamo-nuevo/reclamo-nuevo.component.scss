@@ -7,6 +7,20 @@
 .new-claim-form header {
   margin-bottom:12px
 }
+.new-claim-form header { order:0; }
+.new-claim-form label[for=cliente-busqueda] { order:1; }
+.new-claim-form input[type=search] { order:2; }
+.new-claim-form input[type=hidden] { order:3; }
+.new-claim-form input[type=search] + input + .field-help { order:4; }
+.client-results { order:5; }
+.load-more { order:6; }
+.new-claim-form label[for=servicio] { order:10; }
+.service-picker { order:11; }
+.new-claim-form label[for=motivo] { order:20; }
+.new-claim-form textarea { order:21; }
+.new-claim-form #motivo-help { order:22; }
+.file-upload { order:30; }
+.new-claim-form app-button { order:40; }
 .new-claim-form h2 {
   margin:0 0 6px;
   font-size:var(--font-xl)
@@ -71,7 +85,7 @@
 .client-results {
   display:grid;
   gap:5px;
-  max-height:248px;
+  max-height:172px;
   margin:2px 0 0;
   padding:6px;
   overflow:auto;
@@ -88,29 +102,19 @@
   display:flex;
   width:100%;
   align-items:center;
-  gap:10px;
+  gap:8px;
   border:0;
   border-radius:9px;
-  padding:11px 12px;
+  padding:8px 10px;
   background:transparent;
   color:#17233e;
-  font:600 14px var(--font-family);
+  font:600 13px var(--font-family);
   text-align:left;
   cursor:pointer;
   transition:background .15s,color .15s
 }
-.client-results button:before {
-  content:'Cliente';
-  flex:0 0 auto;
-  border-radius:999px;
-  padding:4px 7px;
-  background:#fff1b0;
-  color:#765a00;
-  font-size:10px;
-  font-weight:800;
-  text-transform:uppercase;
-  letter-spacing:.04em
-}
+.client-code { flex:0 0 auto; color:#765a00; font-size:11px; font-weight:800; }
+.client-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .client-results button:hover,.client-results button:focus-visible {
   background:#fff8d8;
   color:#071538;
@@ -137,6 +141,12 @@
   cursor:wait;
   opacity:.65
 }
+.service-picker { position:relative; }
+.service-trigger { width:100%; min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 13px; border:1px solid var(--color-border-strong); border-radius:var(--radius-md); background:var(--color-surface); color:var(--color-text); font:600 var(--font-sm) var(--font-family); text-align:left; }
+.service-trigger span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.service-options { position:absolute; z-index:5; top:calc(100% + 4px); right:0; left:0; max-height:184px; margin:0; padding:5px; overflow:auto; list-style:none; border:1px solid #dbe3ef; border-radius:12px; background:#fff; box-shadow:0 12px 26px rgb(38 61 103 / 16%); }
+.service-options button { width:100%; min-height:38px; padding:8px 10px; border:0; border-radius:8px; background:transparent; color:#17233e; font:600 13px/1.25 var(--font-family); text-align:left; }
+.service-options button:hover,.service-options button:focus-visible,.service-options button.selected { background:#fff8d8; color:#071538; }
 .new-claim-form app-button {
   margin-top:14px
 }
@@ -146,15 +156,12 @@
     font-size:16px
   }
   .client-results {
-    max-height:min(248px,40dvh);
+    max-height:min(172px,28dvh);
     overscroll-behavior:contain
   }
   .client-results button {
-    min-height:48px;
-    font-size:15px
-  }
-  .client-results button:before {
-    font-size:11px
+    min-height:38px;
+    font-size:13px
   }
   .load-more {
     min-height:44px;
@@ -164,6 +171,8 @@
   .field-help {
     font-size:.75rem
   }
+  .service-trigger { min-height:46px; font-size:.8125rem; }
+  .service-options { max-height:min(184px,30dvh); }
   .status {
     font-size:.875rem
   }

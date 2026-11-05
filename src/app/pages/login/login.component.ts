@@ -1,26 +1,27 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '../../core/Services/auth.service';
 import { NotificationService } from '../../core/Services/notification.service';
 
 @Component({
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule],
   template: `
     <main class="login-page">
       <header class="login-header">
         <div class="header-brand">
           <img src="assets/logo.png" width="917" height="375" alt="Coronel" />
           <span></span>
-          <strong>Coronel Reclamos</strong>
+          <strong>Maserlink</strong>
         </div>
       </header>
 
       <section class="mobile-hero" aria-label="Bienvenida">
         <div class="mobile-copy">
           <img src="assets/logo.png" width="917" height="375" alt="Coronel" class="mobile-logo" />
-          <h1>Bienvenido</h1>
+          <span class="product-name">Bienvenido</span>
+          <h1>Maserlink</h1>
           <p>Ingresá tus datos para gestionar<br />los reclamos.</p>
         </div>
         <div class="claim-illustration mobile-illustration" aria-hidden="true">
@@ -56,7 +57,9 @@ import { NotificationService } from '../../core/Services/notification.service';
               <span>{{ loading() ? 'Ingresando...' : 'Iniciar sesión' }}</span>
               @if (!loading()) { <svg viewBox="0 0 32 24" aria-hidden="true"><path d="M2 12h25M18 2l10 10-10 10"/></svg> }
             </button>
+            <!-- Registro deshabilitado para producción.
             <a class="register-button" routerLink="/registro">Crear cuenta</a>
+            -->
           </form>
         </section>
 

@@ -8,9 +8,9 @@ import { ReclamosService } from './reclamos.service';
 
 const reclamoBackend: ReclamoBackend = {
   recCodigo: '123', recFecha: '2026-10-01T10:00:00.000Z', recHora: null,
-  recMotivo: 'Factura incorrecta', recTcid: '55', recServicio: null, recRecibio: null,
+  recMotivo: 'Factura incorrecta', recTcid: '55', cliNombre: 'Cliente de prueba', recServicio: null, recRecibio: null,
   recSucursal: null, recFecalta: null, recHoraalta: null, recPlamov: null,
-  recEstado: 'RECIBIDO', recDerivo: '42', recFechaD: null, recHoraD: null,
+  recEstado: 'RECIBIDO', recDerivo: '42', usuNombreDerivado: 'Supervisor de prueba', recFechaD: null, recHoraD: null,
   recFechaF: null, recHoraF: null, recUsuarioF: null, recEstadoMsg: null,
   recEnviado: null, recTipo: null, recComentarioF: null, recPrioridad: 'alta',
 };
@@ -29,7 +29,9 @@ describe('ReclamosService', () => {
 
   it('requests the first page and maps the backend contract to the UI model', () => {
     service.list({ limit: '10', offset: '0' }).subscribe(reclamos => {
-      expect(reclamos).toEqual([jasmine.objectContaining({ id: '123', estado: RECLAMO_ESTADOS.RECIBIDOS, prioridad: 'alta' })]);
+      expect(reclamos).toEqual([jasmine.objectContaining({
+        id: '123', clienteId: 'Cliente de prueba', responsableNombre: 'Supervisor de prueba', estado: RECLAMO_ESTADOS.RECIBIDOS, prioridad: 'alta',
+      })]);
     });
 
     const request = http.expectOne(request => request.url === 'http://localhost:7500/reclamos');
@@ -45,6 +47,15 @@ describe('ReclamosService', () => {
     const request = http.expectOne('http://localhost:7500/reclamos/123/estado/FINALIZADO');
     expect(request.request.method).toBe('PATCH');
     expect(request.request.body).toEqual({ usuCodigo: '42', comentario: 'Resuelto' });
+    request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: null });
+  });
+
+  it('sends the selected priority in uppercase', () => {
+    service.asignarPrioridad('123', 'alta').subscribe();
+
+    const request = http.expectOne('http://localhost:7500/reclamos/123/prioridad');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ prioridad: 'ALTA' });
     request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: null });
   });
 

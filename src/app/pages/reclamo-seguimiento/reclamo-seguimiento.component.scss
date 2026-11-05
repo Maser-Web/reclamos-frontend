@@ -105,6 +105,9 @@
 .current .step-marker {
   box-shadow:0 0 0 5px #ffe889
 }
+.completed.current .step-marker {
+  box-shadow:none
+}
 .step-content {
   display:grid;
   gap:4px;

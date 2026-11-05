@@ -41,7 +41,7 @@ import { Cliente } from '../../core/interfaces/cliente.interface';
         } @else if (servicesError(); as error) {
           <section class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/><span>{{ error }}</span><button type="button" (click)="loadServices()">Reintentar</button></section>
         } @else {
-          <select id="servicio" formControlName="servicio"><option value="">Seleccioná un servicio</option>@for (service of services(); track service.serCodigo) {<option [value]="service.serCodigo">{{ serviceLabel(service) }}</option>}</select>
+          <div class="service-picker"><button id="servicio" type="button" class="service-trigger" [attr.aria-expanded]="servicesMenuOpen()" aria-label="Seleccionar servicio" (click)="toggleServicesMenu()"><span>{{ selectedServiceLabel() || 'Seleccioná un servicio' }}</span><app-icon name="chevron-down" [size]="18"/></button>@if (servicesMenuOpen()) {<ul class="service-options" role="listbox" aria-label="Servicios disponibles">@for (service of services(); track service.serCodigo) {<li><button type="button" [class.selected]="form.controls.servicio.value === service.serCodigo" (click)="selectService(service)">{{ serviceLabel(service) }}</button></li>}</ul>}</div>
           @if (!services().length) { <p class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/>No hay servicios disponibles para seleccionar.</p> }
           @if (showError('servicio')) { <p class="field-error">Seleccioná un servicio válido.</p> }
         }
@@ -79,6 +79,7 @@ export class ReclamoNuevoComponent implements OnDestroy {
   readonly sessionError = signal<string | null>(null);
   readonly saving = signal(false);
   readonly selectedFiles = signal<File[]>([]);
+  readonly servicesMenuOpen = signal(false);
   readonly form = this.fb.nonNullable.group({ cliente: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]], motivo: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(1000)]], servicio: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]] });
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
   private searchRequest = 0;
@@ -121,6 +122,10 @@ export class ReclamoNuevoComponent implements OnDestroy {
     this.form.controls.cliente.setValue(String(client.cliCodigo));
     this.clients.set([]); this.hasMoreClients.set(false); this.clientsError.set(null); this.loadingClients.set(false); this.loadingMoreClients.set(false);
   }
+
+  toggleServicesMenu(): void { if (this.services().length) this.servicesMenuOpen.update(open => !open); }
+  selectService(service: Servicio): void { this.form.controls.servicio.setValue(service.serCodigo); this.form.controls.servicio.markAsTouched(); this.servicesMenuOpen.set(false); }
+  selectedServiceLabel(): string { const service = this.services().find(item => item.serCodigo === this.form.controls.servicio.value); return service ? this.serviceLabel(service) : ''; }
 
   canSearchClients(): boolean { return this.isClientSearchValid(this.clientSearch().trim()); }
 
