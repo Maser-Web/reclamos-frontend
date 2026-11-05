@@ -1,0 +1,12 @@
+// Breakpoints centralizados. Móvil primero: el escritorio parte de 768px.
+$bp-phone-xs: 360px;
+$bp-phone-sm: 480px;
+$bp-mobile-max: 767px;
+$bp-tablet: 768px;
+$bp-desktop: 1150px;
+
+@mixin mobile { @media (max-width: $bp-mobile-max) { @content; } }
+@mixin phone-sm { @media (max-width: $bp-phone-sm) { @content; } }
+@mixin phone-xs { @media (max-width: $bp-phone-xs) { @content; } }
+@mixin tablet-up { @media (min-width: $bp-tablet) { @content; } }
+@mixin reduced-motion { @media (prefers-reduced-motion: reduce) { @content; } }

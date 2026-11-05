@@ -1,0 +1,11 @@
+// Tokens SCSS reutilizables (los tokens de runtime viven en :root de styles.scss).
+$tap-min: 44px;
+$focus-ring: 3px solid rgb(246 208 0 / 55%);
+$text-muted-accessible: #5b6880; // ≥ 4.5:1 sobre blanco
+$brand-yellow: #ffdb1d;
+$navy: #071538;
+
+@mixin focus-ring-within { &:focus-within { outline: $focus-ring; outline-offset: 2px; } }
+// Amplía el área táctil sin alterar el layout.
+@mixin tap-area($size: $tap-min) { min-height: $size; min-width: $size; }
+@mixin expand-tap($pad: 12px) { padding-block: $pad; margin-block: -#{$pad}; }

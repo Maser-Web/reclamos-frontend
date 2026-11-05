@@ -1,3 +1,5 @@
+@use './styles/breakpoints' as *;
+@use './styles/tokens' as *;
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
@@ -43,6 +45,7 @@ body { min-width: 320px; margin: 0; background: var(--color-background); color: 
 .app-toast .swal2-timer-progress-bar { background: var(--color-primary); }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
+img[width][height] { height: auto; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgb(246 208 0 / 45%); outline-offset: 2px; }
 .page { width: 100%; max-width: 640px; margin: 0 auto; padding: var(--space-6) var(--space-5) var(--space-8); }
 
@@ -128,8 +131,8 @@ input:focus, select:focus, textarea:focus { border-color: #c7a600; box-shadow: 0
 }
 
 /* Móvil: solo ≤767px. El escritorio no se modifica. */
-@media (max-width: 767px) {
-  :root { --font-base: 1rem; }
+@include mobile {
+  :root { --font-base: 1rem; --shadow: 0 1px 2px rgb(16 24 40 / 5%); --color-muted: #aab4c3; }
   html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   body { overflow-x: clip; -webkit-tap-highlight-color: transparent; }
   .page { padding-inline: max(var(--space-4), env(safe-area-inset-left)) max(var(--space-4), env(safe-area-inset-right)); padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom)); }
@@ -143,6 +146,6 @@ input:focus, select:focus, textarea:focus { border-color: #c7a600; box-shadow: 0
   .app-toast__message.swal2-html-container { font-size: .8125rem; }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@include reduced-motion {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
