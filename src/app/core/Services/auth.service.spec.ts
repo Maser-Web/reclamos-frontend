@@ -34,6 +34,17 @@ describe('AuthService', () => {
     http.expectNone(request => request.method === 'GET' && request.url === 'http://localhost:7500/auth/23');
   });
 
+  it('stores the usu_perfil returned at login in localStorage as "rol" and clears it on logout', () => {
+    service.login({ usuario: 'maria', password: 'secreta' }).subscribe();
+    http.expectOne('http://localhost:7500/auth/login').flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: {
+      accessToken: 'token', expiresAt: '2030-01-01T00:00:00.000Z', sessionId: '23', usuarioId: 42, usuNombre: 'María González', usu_perfil: 2,
+    } });
+
+    expect(localStorage.getItem('rol')).toBe('2');
+    service.logout();
+    expect(localStorage.getItem('rol')).toBeNull();
+  });
+
   it('renews the session without replacing the authenticated user or name', () => {
     service.login({ usuario: 'maria', password: 'secreta' }).subscribe();
     http.expectOne('http://localhost:7500/auth/login').flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: {

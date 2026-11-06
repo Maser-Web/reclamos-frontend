@@ -14,11 +14,16 @@ export const BACKEND_ENDPOINTS = {
   clientes: {
     buscar: `${baseUrl}/clientes/buscar`,
   },
+  motivosReclamos: {
+    apertura: `${baseUrl}/motivos-reclamos/apertura`,
+    clausura: `${baseUrl}/motivos-reclamos/clausura`,
+  },
   reclamos: {
     base: `${baseUrl}/reclamos`,
     byId: (id: string) => `${baseUrl}/reclamos/${encodeURIComponent(id)}`,
     byUsuario: (usuCodigo: string) =>
       `${baseUrl}/reclamos/usuario/${encodeURIComponent(usuCodigo)}`,
+    misReclamos: `${baseUrl}/reclamos/mis-reclamos`,
     historial: (id: string) =>
       `${baseUrl}/reclamos/${encodeURIComponent(id)}/historial`,
     actualizarEstado: (id: string, estado: string) =>

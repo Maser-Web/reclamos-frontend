@@ -846,3 +846,48 @@
   .terms input { width: 20px; height: 20px; }
   .login-link a { @include expand-tap(12px); }
 }
+
+.header-brand .maser-wordmark {
+  display:inline-flex;
+  align-items:baseline;
+  width:auto;
+  height:auto;
+  gap:.16em;
+  background:transparent;
+  color:#071538;
+  font-size:1.55rem;
+  font-weight:800;
+  letter-spacing:-.04em;
+  line-height:1;
+  white-space:nowrap;
+}
+.header-brand .maser-wordmark b { color:#fff; font:inherit; }
+.header-brand .maser-wordmark strong { font:inherit; }
+.maser-lockup {
+  width:max-content;
+  margin:0 0 18px;
+  padding:18px 20px;
+  background:linear-gradient(110deg,#ffcf08,#ffe34e);
+}
+.maser-lockup p {
+  margin:0;
+  color:#071538;
+  font-size:clamp(2.2rem,4vw,3.5rem);
+  font-weight:800;
+  letter-spacing:-.04em;
+  line-height:.95;
+}
+.maser-lockup p span { color:#fff; }
+.maser-lockup small {
+  display:block;
+  margin-top:9px;
+  color:#0d2152;
+  font-size:1rem;
+  font-weight:700;
+  line-height:1.2;
+}
+@media(max-width:767px) {
+  .form-card .maser-lockup.mobile-brand { display:block; width:auto; margin:0 0 21px; }
+  .form-card .maser-lockup.mobile-brand p { font-size:2rem; }
+  .form-card .maser-lockup.mobile-brand small { font-size:.8125rem; }
+}

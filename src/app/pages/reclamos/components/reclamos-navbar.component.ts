@@ -9,7 +9,7 @@ import { AvisosService } from '../../../core/Services/avisos.service';
   imports: [RouterLink, RouterLinkActive, LucideAngularModule],
   template: `
     <header class="reclamos-navbar">
-      <a class="brand-link" routerLink="/reclamos" aria-label="Ir a reclamos"><img src="assets/logo.png" width="917" height="375" alt="Coronel" /></a>
+      <a class="brand-link" routerLink="/reclamos" aria-label="Ir a reclamos"><span class="maser-wordmark" aria-label="Maser LINK"><b>Maser</b><strong>LINK</strong></span></a>
       <nav aria-label="Navegación principal">
         <a routerLink="/reclamos" routerLinkActive="active">
           <lucide-icon [img]="fileIcon" [size]="18" [strokeWidth]="2.4" />
@@ -29,7 +29,7 @@ import { AvisosService } from '../../../core/Services/avisos.service';
     </header>
     <header class="mobile-navbar" [class.minimal]="minimalMobile()">
       <button type="button" class="mobile-back" [class.hidden]="!showBack()" (click)="back.emit()" aria-label="Volver"><lucide-icon [img]="backIcon" [size]="24" [strokeWidth]="2.4" /></button>
-      <a class="mobile-brand" routerLink="/reclamos" aria-label="Ir al inicio"><img src="assets/logo.png" width="917" height="375" alt="Coronel" /></a>
+      <a class="mobile-brand" routerLink="/reclamos" aria-label="Ir al inicio"><span class="maser-wordmark" aria-label="Maser LINK"><b>Maser</b><strong>LINK</strong></span></a>
       <h1>{{ title() }}</h1>
       <button type="button" class="mobile-logout" aria-label="Cerrar sesión" (click)="logoutRequested.emit()"><lucide-icon [img]="logoutIcon" [size]="20" [strokeWidth]="2.2" /></button>
     </header>

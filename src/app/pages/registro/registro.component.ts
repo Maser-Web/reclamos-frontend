@@ -11,13 +11,13 @@ import { UsuarioService } from '../../core/Services/usuario.service';
   template: `
     <main class="register-page">
       <header class="register-header">
-        <div class="header-brand"><img src="assets/logo.png" width="917" height="375" alt="Coronel" /><span></span><strong>Coronel Reclamos</strong></div>
+        <div class="header-brand"><span class="maser-wordmark" aria-label="Maser LINK"><b>Maser</b><strong>LINK</strong></span></div>
       </header>
 
       <section class="register-layout">
-        <aside class="benefits" aria-label="Beneficios de Coronel Reclamos">
-          <p class="eyebrow">CORONEL</p>
-          <h1>Creá tu cuenta<br />en Coronel Reclamos</h1>
+        <aside class="benefits" aria-label="Beneficios de Maser LINK">
+          <div class="maser-lockup" aria-label="Maser LINK, Gestión y resolución de reclamos"><p><span>Maser</span> LINK</p><small>Gestión y resolución<br />de reclamos</small></div>
+          <h1>Creá tu cuenta<br />en Maser LINK</h1>
           <p class="benefit-intro">Gestioná, realizá y hacé seguimiento<br />de reclamos de forma simple y rápida.</p>
           <ul>
             <li><span class="round-icon"><svg viewBox="0 0 24 24"><path d="M7 3h8l3 3v15H7z"/><path d="M15 3v4h3M10 11h5M10 15h5"/></svg></span><p><b>Registrá tus reclamos</b><small>Ingresá nuevos reclamos de manera simple.</small></p></li>
@@ -33,10 +33,9 @@ import { UsuarioService } from '../../core/Services/usuario.service';
         </aside>
 
         <section class="form-card" aria-labelledby="register-title">
-          <img class="mobile-brand" src="assets/logo.png" width="917" height="375" alt="Coronel" />
-          <p class="mobile-eyebrow">CORONEL</p>
+          <div class="maser-lockup mobile-brand" aria-label="Maser LINK, Gestión y resolución de reclamos"><p><span>Maser</span> LINK</p><small>Gestión y resolución de reclamos</small></div>
           <h2 id="register-title">Crear cuenta</h2>
-          <p class="form-intro">Completá tus datos para comenzar a usar<br class="desktop-break" /> Coronel Reclamos.</p>
+          <p class="form-intro">Completá tus datos para comenzar a usar<br class="desktop-break" /> Maser LINK.</p>
 
           <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
             <label for="nombre">Nombre y apellido</label>

@@ -28,6 +28,8 @@ export interface ReclamoBackend {
   recTcid: string | null;
   /** Nombre del cliente, disponible al consultar el detalle: GET /reclamos/:id. */
   cliNombre?: string | null;
+  /** Descripción del servicio, incluida por el backend junto al reclamo. */
+  serDescri?: string | null;
   recServicio: number | null;
   recRecibio: string | null;
   recSucursal: number | null;

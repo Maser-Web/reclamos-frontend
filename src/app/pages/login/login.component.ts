@@ -11,18 +11,16 @@ import { NotificationService } from '../../core/Services/notification.service';
     <main class="login-page">
       <header class="login-header">
         <div class="header-brand">
-          <img src="assets/logo.png" width="917" height="375" alt="Coronel" />
-          <span></span>
-          <strong>Maserlink</strong>
+          <span class="maser-wordmark" aria-label="Maser LINK"><b>Maser</b><strong>LINK</strong></span>
         </div>
       </header>
 
       <section class="mobile-hero" aria-label="Bienvenida">
         <div class="mobile-copy">
-          <img src="assets/logo.png" width="917" height="375" alt="Coronel" class="mobile-logo" />
-          <span class="product-name">Bienvenido</span>
-          <h1>Maserlink</h1>
-          <p>Ingresá tus datos para gestionar<br />los reclamos.</p>
+          <div class="maser-lockup maser-lockup--hero" aria-label="Maser LINK, Gestión y resolución de reclamos">
+            <h1><span>Maser</span> LINK</h1>
+            <p>Gestión y resolución<br />de reclamos</p>
+          </div>
         </div>
         <div class="claim-illustration mobile-illustration" aria-hidden="true">
           <i class="orb orb-one"></i><i class="orb orb-two"></i><i class="spark spark-one"></i><i class="spark spark-two"></i>
@@ -49,7 +47,13 @@ import { NotificationService } from '../../core/Services/notification.service';
             <div class="input-wrap password-wrap">
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="1.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg>
               <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password" autocomplete="current-password" placeholder="Ingresá tu contraseña" />
-              <button type="button" class="password-toggle" (click)="showPassword = !showPassword" [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">{{ showPassword ? 'Ocultar' : 'Ver' }}</button>
+              <button type="button" class="password-toggle" (click)="showPassword = !showPassword" [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="showPassword">
+                @if (showPassword) {
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 4.2A10.9 10.9 0 0 1 12 4c5.2 0 8.8 4.3 9.8 6-.5.9-1.4 2.2-2.7 3.4M6.2 6.2C4.5 7.5 3.3 9.3 2.2 10c1 1.7 4.6 6 9.8 6 1.5 0 2.8-.3 3.9-.9"/><path d="M14.1 14.1A3 3 0 0 1 9.9 9.9"/></svg>
+                } @else {
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12S5.8 6 12 6s9.8 6 9.8 6-3.6 6-9.8 6S2.2 12 2.2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
             </div>
 
             <a class="forgot-password" href="#" (click)="$event.preventDefault()">¿Olvidaste tu contraseña?</a>
@@ -63,7 +67,7 @@ import { NotificationService } from '../../core/Services/notification.service';
           </form>
         </section>
 
-        <aside class="login-showcase" aria-label="Beneficios de Coronel Reclamos">
+        <aside class="login-showcase" aria-label="Beneficios de Maser LINK">
           <div class="claim-illustration" aria-hidden="true">
             <i class="orb orb-one"></i><i class="orb orb-two"></i><i class="dot-grid"></i><i class="spark spark-one"></i><i class="spark spark-two"></i>
             <div class="paper"><b></b><span></span><span></span><span></span><span></span></div>
@@ -87,7 +91,7 @@ import { NotificationService } from '../../core/Services/notification.service';
       </section>
 
       <footer class="login-footer">
-        <p>© 2026 Coronel. Todos los derechos reservados.</p>
+        <p>© 2026 Maser LINK. Todos los derechos reservados.</p>
         <nav aria-label="Enlaces legales"><a href="#">Términos de uso</a><a href="#">Privacidad</a><a href="#">Soporte</a></nav>
       </footer>
     </main>

@@ -183,3 +183,34 @@
 }
 
 @include mobile { .mobile-back:focus-visible, .mobile-logout:focus-visible, .mobile-brand:focus-visible { outline: 3px solid #101a35; outline-offset: 2px; } }
+
+.maser-wordmark {
+  display:inline-flex;
+  align-items:baseline;
+  gap:.16em;
+  color:#071538;
+  font-size:1.4rem;
+  font-weight:800;
+  letter-spacing:-.04em;
+  line-height:1;
+  white-space:nowrap;
+}
+.maser-wordmark b { color:#fff; font:inherit; }
+.maser-wordmark strong { font:inherit; }
+@media(max-width:767px) {
+  .mobile-navbar {
+    grid-template-columns:44px max-content minmax(0,1fr) 44px;
+    gap:6px;
+  }
+  .mobile-brand,
+  .mobile-navbar.minimal .mobile-brand {
+    width:auto;
+    min-width:max-content;
+  }
+  .mobile-navbar:not(.minimal) .mobile-brand { display:none; }
+  .mobile-navbar:not(.minimal) { grid-template-columns:44px minmax(0,1fr) 44px; }
+  .mobile-brand .maser-wordmark { font-size:1.15rem; color:#fff; }
+  .mobile-brand .maser-wordmark strong { color:#fff; text-transform:lowercase; }
+  .mobile-brand .maser-wordmark strong::first-letter { text-transform:uppercase; }
+  .mobile-navbar { background:linear-gradient(#ffd60a,#ffd60a); border-bottom:1px solid rgb(255 255 255 / 55%); }
+}

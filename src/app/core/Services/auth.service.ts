@@ -7,6 +7,9 @@ import { AuthToken, LoginRequest } from '../interfaces/auth.interface';
 
 const SESSION_STORAGE_KEY = 'coronel-reclamos.auth-session';
 
+const ROL_STORAGE_KEY = 'rol';
+const ROLES_ADHERIR_RECLAMO: readonly number[] = [1, 2, 3];
+
 type StoredSession = AuthToken;
 
 @Injectable({ providedIn: 'root' })
@@ -28,7 +31,10 @@ export class AuthService {
     const payload: LoginRequest = { usuario: credentials.usuario.trim(), password: credentials.password };
     return this.http.post<ApiResponse<AuthToken>>(BACKEND_ENDPOINTS.auth.login, payload).pipe(
       map(response => this.unwrap(response)),
-      tap(token => this.persistSession(token)),
+      tap(token => {
+        this.persistSession(token);
+        this.persistRol(token.usuPerfil ?? token.usu_perfil);
+      }),
     );
   }
 
@@ -52,6 +58,25 @@ export class AuthService {
   logout(): void {
     this.session.set(null);
     localStorage.removeItem(SESSION_STORAGE_KEY);
+    localStorage.removeItem(ROL_STORAGE_KEY);
+  }
+
+  /** Roles (usu_perfil) autorizados a adherir clientes a un reclamo. */
+  puedeAdherirReclamo(): boolean {
+    try {
+      const rol = Number(localStorage.getItem(ROL_STORAGE_KEY));
+      return ROLES_ADHERIR_RECLAMO.includes(rol);
+    } catch {
+      return false;
+    }
+  }
+
+  private persistRol(perfil: number | string | null | undefined): void {
+    if (perfil === null || perfil === undefined) {
+      localStorage.removeItem(ROL_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(ROL_STORAGE_KEY, String(perfil));
   }
 
   private bearerHeaders(accessToken: string | undefined): HttpHeaders {

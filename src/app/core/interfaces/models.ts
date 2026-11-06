@@ -9,7 +9,7 @@ export interface Cliente { id: string; nombre: string; cuit: string; email: stri
 export interface Archivo { id: string; nombre: string; tipo: string; tamano: string; }
 export interface Comentario { id: string; reclamoId: string; tipo: TipoComentario; texto: string; autor: string; fecha: string; archivos: Archivo[]; }
 export interface Seguimiento { id: string; reclamoId: string; titulo: string; detalle?: string; autor?: string; fecha: string; hora?: string; tipo: 'creado' | 'asignado' | 'gestion' | 'comentario' | 'cerrado'; }
-export interface Reclamo { id: string; numero: string; asunto: string; descripcion: string; estado: EstadoReclamo; prioridad: PrioridadReclamo; clienteId: string; areaId: string | null; responsableId: string | null; responsableNombre: string | null; fechaCreacion: string; fechaActualizacion: string; archivos: Archivo[]; }
+export interface Reclamo { id: string; numero: string; asunto: string; serDescri: string; descripcion: string; estado: EstadoReclamo; prioridad: PrioridadReclamo; clienteId: string; areaId: string | null; responsableId: string | null; responsableNombre: string | null; fechaCreacion: string; fechaActualizacion: string; archivos: Archivo[]; }
 export interface ReclamoFiltro { estados?: EstadoReclamo[]; areaIds?: string[]; desde?: string; hasta?: string; busqueda?: string; }
 export interface Derivacion { areaId: string; responsableId: string; comentario?: string; }
 export interface Cierre { motivo: string; comentario?: string; notificarCliente: boolean; }
@@ -22,6 +22,7 @@ export interface ReclamoVista {
   id: string;
   numero: string;
   asunto: string;
+  serDescri: string;
   descripcion: string;
   estado: EstadoReclamo;
   prioridad: PrioridadReclamo;

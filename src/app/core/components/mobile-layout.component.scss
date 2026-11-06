@@ -3,6 +3,9 @@
   padding-bottom:calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
   box-sizing:border-box
 }
+.mobile-layout--detail {
+  padding-bottom:0;
+}
 @media(min-width:768px) {
   .mobile-layout {
     padding-bottom:0

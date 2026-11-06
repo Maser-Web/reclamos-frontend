@@ -1,6 +1,7 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { map, Observable, throwError } from 'rxjs';
+import { AuthService } from './auth.service';
 import { BACKEND_ENDPOINTS } from '../endpoints/backend.endpoints';
 import { ApiResponse } from '../interfaces/api-response.interface';
 import {
@@ -17,6 +18,7 @@ export type { ReclamoVista } from '../interfaces/models';
 @Injectable({ providedIn: 'root' })
 export class ReclamosService {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
 
   list(query: ReclamosPaginationQuery = {}): Observable<ReclamoVista[]> {
     const params = this.paginationParams(query);
@@ -37,6 +39,15 @@ export class ReclamosService {
     return this.http.get<ApiResponse<ReclamoBackend[]>>(BACKEND_ENDPOINTS.reclamos.byUsuario(usuCodigo)).pipe(
       map(response => this.unwrap(response).map(reclamo => this.toVista(reclamo))),
     );
+  }
+
+  /** Reclamos adheridos al usuario de la sesión autenticada. */
+  misReclamos(): Observable<ReclamoVista[]> {
+    const accessToken = this.auth.accessToken();
+    if (!accessToken) return throwError(() => new Error('No hay una sesión activa'));
+    return this.http.get<ApiResponse<ReclamoBackend[]>>(BACKEND_ENDPOINTS.reclamos.misReclamos, {
+      headers: new HttpHeaders({ Authorization: `Bearer ${accessToken}` }),
+    }).pipe(map(response => this.unwrap(response).map(reclamo => this.toVista(reclamo))));
   }
 
   historial(id: string): Observable<Seguimiento[]> {
@@ -101,6 +112,7 @@ export class ReclamosService {
       id: reclamo.recCodigo,
       numero: `${reclamo.recCodigo}`,
       asunto: reclamo.recMotivo?.trim() || `Reclamo ${reclamo.recCodigo}`,
+      serDescri: reclamo.serDescri?.trim() || 'Sin servicio informado.',
       descripcion: reclamo.recMotivo?.trim() || 'Sin descripción disponible.',
       estado,
       prioridad: this.toPrioridadVista(reclamo.recPrioridad),

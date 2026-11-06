@@ -1,14 +1,15 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ReclamoBackend } from '../interfaces/reclamo.interface';
 import { RECLAMO_ESTADOS } from '../constants/reclamo-estados';
 import { ReclamosService } from './reclamos.service';
+import { AuthService } from './auth.service';
 
 const reclamoBackend: ReclamoBackend = {
   recCodigo: '123', recFecha: '2026-10-01T10:00:00.000Z', recHora: null,
-  recMotivo: 'Factura incorrecta', recTcid: '55', cliNombre: 'Cliente de prueba', recServicio: null, recRecibio: null,
+  recMotivo: 'Factura incorrecta', recTcid: '55', cliNombre: 'Cliente de prueba', serDescri: 'Energía', recServicio: null, recRecibio: null,
   recSucursal: null, recFecalta: null, recHoraalta: null, recPlamov: null,
   recEstado: 'RECIBIDO', recDerivo: '42', usuNombreDerivado: 'Supervisor de prueba', recFechaD: null, recHoraD: null,
   recFechaF: null, recHoraF: null, recUsuarioF: null, recEstadoMsg: null,
@@ -20,7 +21,7 @@ describe('ReclamosService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection(), provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection(), provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: { accessToken: signal('token-de-prueba') } }] });
     service = TestBed.inject(ReclamosService);
     http = TestBed.inject(HttpTestingController);
   });
@@ -30,7 +31,7 @@ describe('ReclamosService', () => {
   it('requests the first page and maps the backend contract to the UI model', () => {
     service.list({ limit: '10', offset: '0' }).subscribe(reclamos => {
       expect(reclamos).toEqual([jasmine.objectContaining({
-        id: '123', clienteId: 'Cliente de prueba', responsableNombre: 'Supervisor de prueba', estado: RECLAMO_ESTADOS.RECIBIDOS, prioridad: 'alta',
+        id: '123', clienteId: 'Cliente de prueba', serDescri: 'Energía', responsableNombre: 'Supervisor de prueba', estado: RECLAMO_ESTADOS.RECIBIDOS, prioridad: 'alta',
       })]);
     });
 
@@ -66,6 +67,15 @@ describe('ReclamosService', () => {
 
     const request = http.expectOne('http://localhost:7500/reclamos/usuario/42');
     expect(request.request.method).toBe('GET');
+    request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: [reclamoBackend] });
+  });
+
+  it('requests only the authenticated user claims with a bearer token', () => {
+    service.misReclamos().subscribe(reclamos => expect(reclamos).toEqual([jasmine.objectContaining({ id: '123' })]));
+
+    const request = http.expectOne('http://localhost:7500/reclamos/mis-reclamos');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token-de-prueba');
     request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: [reclamoBackend] });
   });
 

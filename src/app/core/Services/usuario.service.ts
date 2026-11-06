@@ -1,9 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 import { BACKEND_ENDPOINTS } from '../endpoints/backend.endpoints';
 import { CrearUsuarioRequest, Usuario, UsuarioCreado } from '../interfaces/usuario.interface';
+import { ApiResponse } from '../interfaces/api-response.interface';
 
 /** Mantiene el usuario autenticado y centraliza las operaciones de cuenta. */
 @Injectable({ providedIn: 'root' })
@@ -24,5 +25,12 @@ export class UsuarioService {
       usuContrasena: datos.usuContrasena,
       usuFecnac: datos.usuFecnac,
     });
+  }
+
+  /** Obtiene los usuarios disponibles para asociar a un reclamo. */
+  listar(): Observable<Usuario[]> {
+    return this.http.get<ApiResponse<Usuario[]> | Usuario[]>(BACKEND_ENDPOINTS.usuario.base).pipe(
+      map(response => Array.isArray(response) ? response : response.data ?? []),
+    );
   }
 }

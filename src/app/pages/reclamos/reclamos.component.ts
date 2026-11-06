@@ -18,8 +18,8 @@ type StatusFilter = 'todos' | EstadoReclamo;
     <main class="claims-page">
       <app-reclamos-navbar [usuarioNombre]="auth.usuarioNombre()" (logoutRequested)="logout()" />
       <section class="mobile-hero">
-        <div><h1>MaserLink</h1><p>Gestión y resolución<br />de reclamos</p></div>
-        <img src="assets/reclamo-clipboard.png" alt="" aria-hidden="true" />
+        <div><h1><span class="hero-maser">Maser</span><span class="hero-link">Link</span></h1><p>Gestión y resolución<br />de reclamos</p></div>
+        <img src="assets/reclamo-note.svg" alt="" aria-hidden="true" />
       </section>
       <section class="workspace">
         <app-reclamos-filters
@@ -38,8 +38,8 @@ type StatusFilter = 'todos' | EstadoReclamo;
             <div class="headings"><span>#</span><span>Reclamo</span><span>Cliente</span><span>Estado</span><span>Prioridad</span><span>Fecha</span><span>Acciones</span></div>
             <div class="claim-list">@for (claim of claims(); track claim.id) {
               <article class="claim" [class]="claim.estado" role="link" tabindex="0" (click)="open(claim)" (keydown.enter)="open(claim)" (keydown.space)="open(claim); $event.preventDefault()">
-                <i class="rail"></i><strong class="number">{{ claim.numero }}</strong><div class="subject"><b>{{ claim.asunto }}</b><span>{{ claim.descripcion }}</span></div><div class="client"><span><b>{{ client(claim) }}</b></span></div><span class="state">{{ statusLabel(claim.estado) }}</span><span class="priority" [class]="claim.prioridad"><i></i>{{ priorityLabel(claim.prioridad) }}</span><time><app-icon name="calendar-days" [size]="15"/><span>{{ displayDate(claim.fechaActualizacion) }}<small>{{ displayTime(claim.fechaActualizacion) }}</small></span></time><span class="actions"><button type="button" class="action-button action-priority" aria-label="Asignar prioridad" title="Asignar prioridad" (click)="openPriority(claim, $event)"><app-icon name="flag" [size]="20"/></button><button type="button" class="action-button action-detail" aria-label="Ver detalle del reclamo" title="Ver detalle" (click)="open(claim, $event)"><app-icon name="chevron-right" [size]="24"/></button></span>
-                <div class="m-top"><span class="state">{{ statusLabel(claim.estado) }}</span><time>{{ displayDate(claim.fechaActualizacion) }}</time></div><div class="m-body"><strong>{{ claim.numero }}</strong><b>{{ claim.asunto }}</b><span>Cliente: {{ client(claim) }}</span><small><app-icon name="user-round" [size]="15"/>{{ claim.responsableNombre || claim.responsableId || 'Sin asignar' }}</small></div><div class="m-actions"><app-icon name="paperclip" [size]="16"/>{{ attachmentCount(claim) }}<button type="button" aria-label="Ver detalle del reclamo" (click)="open(claim)"><app-icon name="chevron-right" [size]="27"/></button></div>
+                <i class="rail"></i><strong class="number">{{ claim.numero }}</strong><div class="subject"><b>{{ claim.serDescri }}</b><span>{{ claim.descripcion }}</span></div><div class="client"><span><b>{{ client(claim) }}</b></span></div><span class="state">{{ statusLabel(claim.estado) }}</span><span class="priority" [class]="claim.prioridad"><i></i>{{ priorityLabel(claim.prioridad) }}</span><time><app-icon name="calendar-days" [size]="15"/><span>{{ displayDate(claim.fechaActualizacion) }}<small>{{ displayTime(claim.fechaActualizacion) }}</small></span></time><span class="actions"><button type="button" class="action-button action-priority" aria-label="Asignar prioridad" title="Asignar prioridad" (click)="openPriority(claim, $event)"><app-icon name="flag" [size]="20"/></button><button type="button" class="action-button action-detail" aria-label="Ver detalle del reclamo" title="Ver detalle" (click)="open(claim, $event)"><app-icon name="chevron-right" [size]="24"/></button></span>
+                <div class="m-top"><span class="state">{{ statusLabel(claim.estado) }}</span><time>{{ displayDate(claim.fechaActualizacion) }}</time></div><div class="m-body"><strong>Número de reclamo #{{ claim.numero }}</strong><b>{{ claim.serDescri }}</b><span class="priority" [class]="claim.prioridad"><i></i>Prioridad {{ priorityLabel(claim.prioridad) }}</span><span class="description">{{ claim.descripcion }}</span><span class="client-name">Cliente: {{ client(claim) }}</span></div><div class="m-actions"><span class="responsible"><app-icon name="user-round" [size]="15"/>{{ claim.responsableNombre || claim.responsableId || 'Sin asignar' }}</span><span class="attachments"><app-icon name="paperclip" [size]="16"/>{{ attachmentCount(claim) }}</span><button type="button" aria-label="Ver detalle del reclamo" (click)="open(claim)"><app-icon name="chevron-right" [size]="27"/></button></div>
               </article>
             }</div>
             <nav class="pagination" aria-label="Paginación de reclamos">
@@ -88,7 +88,7 @@ export class ReclamosComponent {
   ] as const;
   readonly claims = computed(() => this.all().filter(claim => {
     const term = this.searchTerm().trim().toLowerCase();
-    return (this.activeStatus() === 'todos' || claim.estado === this.activeStatus()) && (!term || [claim.numero, claim.asunto, claim.descripcion, this.client(claim)].join(' ').toLowerCase().includes(term));
+    return (this.activeStatus() === 'todos' || claim.estado === this.activeStatus()) && (!term || [claim.numero, claim.asunto, claim.serDescri, claim.descripcion, this.client(claim)].join(' ').toLowerCase().includes(term));
   }));
   readonly paginationMessage = computed(() => {
     if (this.loading()) return 'Consultando páginas...';
@@ -149,12 +149,13 @@ export class ReclamosComponent {
     const request = ++this.requestId;
     this.loading.set(true);
     // Se solicita un registro adicional para confirmar si existe una página siguiente.
-    this.service.list({ limit: String(this.pageSize + 1), offset: String(this.page() * this.pageSize) }).subscribe({
+    this.service.misReclamos().subscribe({
       next: claims => {
         if (request !== this.requestId) return;
-        this.hasNextPage.set(claims.length > this.pageSize);
+        const start = this.page() * this.pageSize;
+        this.hasNextPage.set(claims.length > start + this.pageSize);
         const states = this.routeStates();
-        const pageClaims = claims.slice(0, this.pageSize);
+        const pageClaims = claims.slice(start, start + this.pageSize);
         this.all.set(states.length ? pageClaims.filter(claim => states.includes(claim.estado)) : pageClaims);
       },
       error: () => { if (request === this.requestId) { this.all.set([]); this.hasNextPage.set(false); this.loading.set(false); } },

@@ -190,12 +190,23 @@
 .password-toggle {
   position:absolute;
   right:12px;
+  width:40px;
   height:40px;
-  padding:0 3px;
+  display:grid;
+  padding:0;
+  place-items:center;
   border:0;
   background:transparent;
   color:#66728a;
-  font:800 16px var(--font-family)
+}
+.password-toggle svg {
+  width:21px;
+  height:21px;
+  fill:none;
+  stroke:currentColor;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-width:2;
 }
 .forgot-password {
   justify-self:end;
@@ -631,11 +642,15 @@
   }
   .password-toggle {
     right:23px;
+    width:68px;
     height:68px;
-    padding-left:28px;
-    border-left:1px solid #dce1ea;
-    color:#64708a;
-    font-size:29px
+    padding:0;
+    border-left:0;
+    color:#64708a
+  }
+  .password-toggle svg {
+    width:31px;
+    height:31px;
   }
   .forgot-password {
     margin:-5px 0 39px;
@@ -743,9 +758,13 @@
   }
   .password-toggle {
     right:12px;
+    width:38px;
     height:38px;
-    padding-left:14px;
-    font-size:15px
+    padding:0
+  }
+  .password-toggle svg {
+    width:19px;
+    height:19px;
   }
   .forgot-password {
     margin:-1px 0 22px;
@@ -993,4 +1012,38 @@
   .input-wrap { @include focus-ring-within; }
   .help-link, .forgot-password { @include expand-tap(12px); }
   .password-toggle { @include tap-area; }
+}
+
+.header-brand .maser-wordmark {
+  display:inline-flex;
+  align-items:baseline;
+  width:auto;
+  height:auto;
+  gap:.16em;
+  background:transparent;
+  color:#071538;
+  font-size:1.6rem;
+  font-weight:800;
+  letter-spacing:-.04em;
+  line-height:1;
+  white-space:nowrap;
+}
+.header-brand .maser-wordmark b { color:#fff; font:inherit; }
+.header-brand .maser-wordmark strong { font:inherit; }
+.maser-lockup--hero h1 { color:#071538; }
+.maser-lockup--hero h1 span { color:#fff; }
+.maser-lockup--hero p { color:#0d2152; }
+@media(max-width:767px) {
+  .mobile-copy .maser-lockup--hero { display:block; }
+  .mobile-copy .maser-lockup--hero h1 {
+    margin:0 0 7px;
+    font-weight:800;
+    letter-spacing:-.04em;
+  }
+  .mobile-copy .maser-lockup--hero p { margin:0; }
+  .login-shell {
+    z-index:4;
+    margin:-20px auto 0;
+  }
+  .form-panel { padding-top:clamp(26px,7vw,52px); }
 }

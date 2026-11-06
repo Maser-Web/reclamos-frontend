@@ -1,13 +1,16 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { finalize } from 'rxjs';
 import { AuthService } from '../../core/Services/auth.service';
 import { ReclamosApiService } from '../../core/Services/reclamos-api.service';
 import { ClientesService } from '../../core/Services/clientes.service';
+import { MotivosReclamosService } from '../../core/Services/motivos-reclamos.service';
 import { AppButtonComponent, AppHeaderComponent, AppIconComponent } from '../../core/components/ui';
 import { NotificationService } from '../../core/Services/notification.service';
 import { Servicio } from '../../core/interfaces/servicio.interface';
 import { Cliente } from '../../core/interfaces/cliente.interface';
+import { MotivoReclamo } from '../../core/interfaces/motivo-reclamo.interface';
 
 @Component({
   standalone: true,
@@ -32,9 +35,18 @@ import { Cliente } from '../../core/interfaces/cliente.interface';
           @if (hasMoreClients()) {<button class="load-more" type="button" (click)="loadMoreClients()" [disabled]="loadingMoreClients()">{{ loadingMoreClients() ? 'Cargando…' : 'Cargar más' }}</button>}
         }
         @if (showError('cliente')) { <p class="field-error">Seleccioná un cliente válido.</p> }
-        <label for="motivo">Motivo *</label>
-        <textarea id="motivo" formControlName="motivo" maxlength="1000" placeholder="Contanos cuál es el inconveniente..." aria-describedby="motivo-help"></textarea>
-        <div id="motivo-help" class="field-help"><span>{{ form.controls.motivo.value.length }}/1000</span>@if (showError('motivo')) { <b>El motivo es obligatorio y no puede contener solo espacios.</b> }</div>
+        <section class="motivo-field">
+          <label for="motivo">Motivo *</label>
+          @if (loadingMotivos()) {
+            <p class="status" role="status">Cargando motivos de apertura…</p>
+          } @else if (motivosError(); as error) {
+            <section class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/><span>{{ error }}</span><button type="button" (click)="loadMotivos()">Reintentar</button></section>
+          } @else {
+            <div class="motivo-picker"><button id="motivo" type="button" class="motivo-trigger" [attr.aria-expanded]="motivosMenuOpen()" aria-haspopup="listbox" aria-label="Seleccionar motivo" (click)="toggleMotivosMenu()"><span [class.placeholder]="!selectedMotivoLabel()">{{ selectedMotivoLabel() || 'Seleccioná un motivo' }}</span><app-icon name="chevron-down" [size]="18"/></button>@if (motivosMenuOpen()) {<ul class="motivo-options" role="listbox" aria-label="Motivos de apertura">@for (motivo of motivos(); track motivo.mtrCodigo) {<li><button type="button" role="option" [attr.aria-selected]="form.controls.motivo.value === motivo.mtrDescri" [class.selected]="form.controls.motivo.value === motivo.mtrDescri" (click)="selectMotivo(motivo)"><span>{{ motivo.mtrDescri }}</span><app-icon name="check" [size]="17"/></button></li>}</ul>}</div>
+            @if (!motivos().length) { <p class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/>No hay motivos de apertura disponibles.</p> }
+          }
+          <div id="motivo-help" class="field-help">@if (showError('motivo')) { <b>Seleccioná un motivo válido.</b> }</div>
+        </section>
         <label for="servicio">Servicio *</label>
         @if (loadingServices()) {
           <p class="status" role="status">Cargando servicios…</p>
@@ -52,7 +64,7 @@ import { Cliente } from '../../core/interfaces/cliente.interface';
           <div id="archivos-help" class="file-help">@if (selectedFiles().length) {<span>{{ selectedFiles().length }} archivo(s) seleccionado(s)</span><ul>@for (file of selectedFiles(); track file.name + file.size) {<li><app-icon name="paperclip" [size]="14"/>{{ file.name }}</li>}</ul>} @else {<span>Sin archivos seleccionados.</span>}</div>
         </section>
         @if (sessionError(); as error) { <p class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/>{{ error }}</p> }
-        <app-button type="submit" label="Crear reclamo" icon="plus" [disabled]="form.invalid || loadingServices() || !!servicesError() || !services().length || saving()" />
+        <app-button type="submit" label="Crear reclamo" icon="plus" [disabled]="form.invalid || loadingServices() || !!servicesError() || !services().length || loadingMotivos() || !!motivosError() || !motivos().length || saving()" />
       </form>
     </main>
   `,
@@ -63,12 +75,16 @@ export class ReclamoNuevoComponent implements OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(ReclamosApiService);
   private readonly clientesService = inject(ClientesService);
+  private readonly motivosService = inject(MotivosReclamosService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);
   readonly services = signal<Servicio[]>([]);
   readonly loadingServices = signal(false);
   readonly servicesError = signal<string | null>(null);
+  readonly motivos = signal<MotivoReclamo[]>([]);
+  readonly loadingMotivos = signal(false);
+  readonly motivosError = signal<string | null>(null);
   readonly clients = signal<Cliente[]>([]);
   readonly clientSearch = signal('');
   readonly selectedClient = signal<Cliente | null>(null);
@@ -80,12 +96,21 @@ export class ReclamoNuevoComponent implements OnDestroy {
   readonly saving = signal(false);
   readonly selectedFiles = signal<File[]>([]);
   readonly servicesMenuOpen = signal(false);
+  readonly motivosMenuOpen = signal(false);
   readonly form = this.fb.nonNullable.group({ cliente: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]], motivo: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(1000)]], servicio: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]] });
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
   private searchRequest = 0;
   private readonly clientPageSize = 20;
 
-  constructor() { this.loadServices(); }
+  constructor() { this.loadServices(); this.loadMotivos(); }
+
+  loadMotivos(): void {
+    this.loadingMotivos.set(true); this.motivosError.set(null);
+    this.motivosService.apertura().pipe(finalize(() => this.loadingMotivos.set(false))).subscribe({
+      next: motivos => this.motivos.set(motivos),
+      error: error => this.motivosError.set(this.apiErrorMessage(error, 'No pudimos cargar los motivos de apertura. Intentá nuevamente.')),
+    });
+  }
 
   loadServices(): void {
     this.loadingServices.set(true); this.servicesError.set(null);
@@ -126,6 +151,9 @@ export class ReclamoNuevoComponent implements OnDestroy {
   toggleServicesMenu(): void { if (this.services().length) this.servicesMenuOpen.update(open => !open); }
   selectService(service: Servicio): void { this.form.controls.servicio.setValue(service.serCodigo); this.form.controls.servicio.markAsTouched(); this.servicesMenuOpen.set(false); }
   selectedServiceLabel(): string { const service = this.services().find(item => item.serCodigo === this.form.controls.servicio.value); return service ? this.serviceLabel(service) : ''; }
+  toggleMotivosMenu(): void { if (this.motivos().length) this.motivosMenuOpen.update(open => !open); }
+  selectMotivo(motivo: MotivoReclamo): void { this.form.controls.motivo.setValue(motivo.mtrDescri); this.form.controls.motivo.markAsTouched(); this.motivosMenuOpen.set(false); }
+  selectedMotivoLabel(): string { return this.form.controls.motivo.value; }
 
   canSearchClients(): boolean { return this.isClientSearchValid(this.clientSearch().trim()); }
 

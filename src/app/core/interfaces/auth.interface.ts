@@ -9,5 +9,7 @@ export interface AuthToken {
   sessionId: string;
   usuarioId: number;
   usuNombre: string | null;
+  usuPerfil?: number | string | null;
+  usu_perfil?: number | string | null;
 }
 
