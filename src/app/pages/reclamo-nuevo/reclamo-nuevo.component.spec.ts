@@ -1,4 +1,4 @@
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { of } from 'rxjs';
@@ -6,6 +6,8 @@ import { AuthService } from '../../core/Services/auth.service';
 import { ReclamosApiService } from '../../core/Services/reclamos-api.service';
 import { ClientesService } from '../../core/Services/clientes.service';
 import { MotivosReclamosService } from '../../core/Services/motivos-reclamos.service';
+import { NotificationService } from '../../core/Services/notification.service';
+import { AvisosService } from '../../core/Services/avisos.service';
 import { ReclamoNuevoComponent } from './reclamo-nuevo.component';
 
 describe('ReclamoNuevoComponent', () => {
@@ -21,7 +23,13 @@ describe('ReclamoNuevoComponent', () => {
   const motivosService = {
     apertura: jasmine.createSpy('apertura').and.returnValue(of([{ mtrCodigo: 1, mtrDescri: 'Sin suministro', mtrTipo: 1 }])),
   };
-  const router = { navigateByUrl: jasmine.createSpy('navigateByUrl').and.resolveTo(true) };
+  const router = {
+    events: of(),
+    url: '/',
+    createUrlTree: () => ({}),
+    serializeUrl: () => '/',
+    navigateByUrl: jasmine.createSpy('navigateByUrl').and.resolveTo(true),
+  };
 
   beforeEach(async () => {
     api.obtenerServicios.calls.reset();
@@ -35,8 +43,11 @@ describe('ReclamoNuevoComponent', () => {
         { provide: ReclamosApiService, useValue: api },
         { provide: ClientesService, useValue: clientesService },
         { provide: MotivosReclamosService, useValue: motivosService },
+        { provide: NotificationService, useValue: { success: jasmine.createSpy('success').and.resolveTo(undefined) } },
+        { provide: AvisosService, useValue: { pendientes: signal(0) } },
         { provide: AuthService, useValue: { usuarioCodigo: signal(7), usuarioNombre: signal('Operador'), logout: () => undefined } },
         { provide: Router, useValue: router },
+        { provide: ActivatedRoute, useValue: {} },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(ReclamoNuevoComponent);

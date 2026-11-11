@@ -42,4 +42,15 @@ describe('ReclamosApiService', () => {
   it('rejects an invalid service id before creating a request', () => {
     expect(() => service.obtenerServicioPorId(0)).toThrowError('El id del servicio debe ser un entero positivo');
   });
+
+  it('deduplica y almacena temporalmente el catálogo de servicios', () => {
+    service.obtenerServicios().subscribe();
+    service.obtenerServicios().subscribe();
+    const request = http.expectOne('http://localhost:7500/servicios');
+    request.flush({ codigo: 200, mensaje: 'OK', data: [] });
+
+    service.obtenerServicios().subscribe();
+    http.expectNone('http://localhost:7500/servicios');
+    expect(true).toBeTrue();
+  });
 });

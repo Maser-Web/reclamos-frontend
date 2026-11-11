@@ -36,7 +36,7 @@ type NotificationFilter = 'todas' | 'pendientes' | 'leidas';
         @if (loading() && avisos.avisos().length === 0) {
           <section class="empty-notifications" role="status"><app-icon name="bell" [size]="38"/><strong>Cargando avisos</strong><span>Un momento, por favor.</span></section>
         } @else if (loadError() && avisos.avisos().length === 0) {
-          <section class="empty-notifications load-error" role="alert"><app-icon name="circle-alert" [size]="38"/><strong>No se pudieron cargar los avisos</strong><button type="button" (click)="loadAvisos()">Reintentar</button></section>
+          <section class="empty-notifications load-error" role="alert"><app-icon name="circle-alert" [size]="38"/><strong>No se pudieron cargar los avisos</strong><button type="button" (click)="loadAvisos(true)">Reintentar</button></section>
         } @else {
           <section class="notification-list" aria-live="polite" [attr.aria-busy]="loading()">
             @for (aviso of visibleAvisos(); track aviso.aviCod) {
@@ -51,7 +51,9 @@ type NotificationFilter = 'todas' | 'pendientes' | 'leidas';
                 <span class="notification-type"><app-icon name="bell" [size]="21"/></span>
                 <span class="notification-copy">
                   <strong>{{ aviso.aviTitulo ?? 'Aviso' }}</strong>
-                  <span>{{ aviso.aviDescri ?? 'Sin descripción' }}</span>
+                  @if (showDescription(aviso)) {
+                    <span>{{ aviso.aviDescri }}</span>
+                  }
                   @if (isPending(aviso)) {<small>Pendiente de lectura</small>}
                 </span>
                 <time>{{ aviso.aviFecha ?? 'Fecha no disponible' }}</time>
@@ -103,6 +105,11 @@ export class NotificacionesComponent {
     return aviso.aviVisto !== true;
   }
 
+  showDescription(aviso: Aviso): boolean {
+    const description = aviso.aviDescri?.trim();
+    return Boolean(description) && description !== (aviso.aviTitulo?.trim() || 'Aviso');
+  }
+
   cardLabel(aviso: Aviso): string {
     const title = aviso.aviTitulo ?? 'Aviso';
     return this.isPending(aviso) ? `${title}. Seleccionar para marcar como leído.` : title;
@@ -118,10 +125,10 @@ export class NotificacionesComponent {
       : 'Las nuevas actualizaciones aparecerán aquí.';
   }
 
-  loadAvisos(): void {
+  loadAvisos(forceRefresh = false): void {
     this.loading.set(true);
     this.loadError.set(false);
-    this.avisos.consultarAvisos().pipe(
+    this.avisos.consultarAvisos({ forceRefresh }).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.loading.set(false)),
     ).subscribe({

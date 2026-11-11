@@ -25,7 +25,7 @@ interface UsuarioAdherible { codigo: number; nombre: string; }
         @if (loading()) {
           <section class="search-state" aria-live="polite"><p>Cargando usuarios disponibles…</p></section>
         } @else if (loadError()) {
-          <section class="search-state" aria-live="polite"><app-icon name="circle-alert" [size]="25" /><p>No pudimos cargar los usuarios.</p><button type="button" class="retry" (click)="loadUsers()">Reintentar</button></section>
+          <section class="search-state" aria-live="polite"><app-icon name="circle-alert" [size]="25" /><p>No pudimos cargar los usuarios.</p><button type="button" class="retry" (click)="loadUsers(true)">Reintentar</button></section>
         } @else if (!canSearch()) {
           <section class="search-state" aria-live="polite"><app-icon name="search" [size]="25" /><p>Empezá a escribir para ver usuarios disponibles.</p></section>
         } @else if (!results().length) {
@@ -57,10 +57,10 @@ export class ReclamoAdherirClienteComponent {
 
   constructor() { this.loadUsers(); }
 
-  loadUsers(): void {
+  loadUsers(forceRefresh = false): void {
     this.loading.set(true);
     this.loadError.set(false);
-    this.usuariosService.listar().pipe(finalize(() => this.loading.set(false))).subscribe({
+    this.usuariosService.listar({ forceRefresh }).pipe(finalize(() => this.loading.set(false))).subscribe({
       next: usuarios => this.usuarios.set(usuarios.map(usuario => ({
         codigo: usuario.usuCodigo,
         nombre: usuario.usuNombre?.trim() || `Usuario ${usuario.usuCodigo}`,

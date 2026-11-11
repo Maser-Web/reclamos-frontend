@@ -9,7 +9,7 @@ import { AuthService } from './auth.service';
 
 const reclamoBackend: ReclamoBackend = {
   recCodigo: '123', recFecha: '2026-10-01T10:00:00.000Z', recHora: null,
-  recMotivo: 'Factura incorrecta', recTcid: '55', cliNombre: 'Cliente de prueba', serDescri: 'Energía', recServicio: null, recRecibio: null,
+  recMotivo: 'Factura incorrecta', recTcid: '55', cliNombre: 'Cliente de prueba', recServicio: 2, recRecibio: null,
   recSucursal: null, recFecalta: null, recHoraalta: null, recPlamov: null,
   recEstado: 'RECIBIDO', recDerivo: '42', usuNombreDerivado: 'Supervisor de prueba', recFechaD: null, recHoraD: null,
   recFechaF: null, recHoraF: null, recUsuarioF: null, recEstadoMsg: null,
@@ -31,7 +31,7 @@ describe('ReclamosService', () => {
   it('requests the first page and maps the backend contract to the UI model', () => {
     service.list({ limit: '10', offset: '0' }).subscribe(reclamos => {
       expect(reclamos).toEqual([jasmine.objectContaining({
-        id: '123', clienteId: 'Cliente de prueba', serDescri: 'Energía', responsableNombre: 'Supervisor de prueba', estado: RECLAMO_ESTADOS.RECIBIDOS, prioridad: 'alta',
+        id: '123', clienteId: 'Cliente de prueba', serDescri: 'Servicio 2', responsableNombre: 'Supervisor de prueba', estado: RECLAMO_ESTADOS.RECIBIDOS, prioridad: 'alta',
       })]);
     });
 
@@ -70,13 +70,29 @@ describe('ReclamosService', () => {
     request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: [reclamoBackend] });
   });
 
-  it('requests only the authenticated user claims with a bearer token', () => {
-    service.misReclamos().subscribe(reclamos => expect(reclamos).toEqual([jasmine.objectContaining({ id: '123' })]));
+  it('requests an authenticated paginated claim page with a bearer token', () => {
+    service.misReclamos({ limit: '10', offset: '20' }).subscribe(page => {
+      expect(page.items).toEqual([jasmine.objectContaining({ id: '123' })]);
+      expect(page).toEqual(jasmine.objectContaining({ limit: 10, offset: 20, total: 31, hasNext: true }));
+    });
 
-    const request = http.expectOne('http://localhost:7500/reclamos/mis-reclamos');
+    const request = http.expectOne(request => request.url === 'http://localhost:7500/reclamos/mis-reclamos');
     expect(request.request.method).toBe('GET');
     expect(request.request.headers.get('Authorization')).toBe('Bearer token-de-prueba');
-    request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: [reclamoBackend] });
+    expect(request.request.params.get('limit')).toBe('10');
+    expect(request.request.params.get('offset')).toBe('20');
+    request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: { items: [reclamoBackend], limit: 10, offset: 20, total: 31, hasNext: true } });
+  });
+
+  it('adapts the previous array response while the paginated endpoint is deployed', () => {
+    service.misReclamos({ limit: '1', offset: '1' }).subscribe(page => {
+      expect(page.total).toBe(2);
+      expect(page.hasNext).toBeFalse();
+      expect(page.items).toEqual([jasmine.objectContaining({ id: '124' })]);
+    });
+
+    const request = http.expectOne(request => request.url === 'http://localhost:7500/reclamos/mis-reclamos');
+    request.flush({ codigo: 200, mensaje: 'OK', data: [reclamoBackend, { ...reclamoBackend, recCodigo: '124' }] });
   });
 
   it('requests a claim history by claim code', () => {

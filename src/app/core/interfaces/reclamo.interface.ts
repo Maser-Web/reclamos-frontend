@@ -14,6 +14,15 @@ export interface ReclamosPaginationQuery {
   offset?: string;
 }
 
+/** Paginated response data returned by GET /reclamos/mis-reclamos. */
+export interface ReclamosPaginadosBackend {
+  items: ReclamoBackend[];
+  limit: number;
+  offset: number;
+  total: number;
+  hasNext: boolean;
+}
+
 export interface ActualizarEstadoRequest {
   usuCodigo: string;
   comentario?: string;
@@ -29,7 +38,6 @@ export interface ReclamoBackend {
   /** Nombre del cliente, disponible al consultar el detalle: GET /reclamos/:id. */
   cliNombre?: string | null;
   /** Descripción del servicio, incluida por el backend junto al reclamo. */
-  serDescri?: string | null;
   recServicio: number | null;
   recRecibio: string | null;
   recSucursal: number | null;

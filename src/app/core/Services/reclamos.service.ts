@@ -8,12 +8,21 @@ import {
   ActualizarEstadoRequest,
   HistorialReclamoBackend,
   ReclamoBackend,
+  ReclamosPaginadosBackend,
   ReclamosPaginationQuery,
 } from '../interfaces/reclamo.interface';
 import { PrioridadReclamo, ReclamoVista, Seguimiento } from '../interfaces/models';
 import { EstadoReclamo, RECLAMO_ESTADOS, RECLAMO_ESTADOS_LISTA, RECLAMO_ESTADO_ETIQUETAS } from '../constants/reclamo-estados';
 
 export type { ReclamoVista } from '../interfaces/models';
+
+export interface ReclamosPaginados {
+  items: ReclamoVista[];
+  limit: number;
+  offset: number;
+  total: number;
+  hasNext: boolean;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ReclamosService {
@@ -42,12 +51,29 @@ export class ReclamosService {
   }
 
   /** Reclamos adheridos al usuario de la sesión autenticada. */
-  misReclamos(): Observable<ReclamoVista[]> {
+  misReclamos(query: ReclamosPaginationQuery = {}): Observable<ReclamosPaginados> {
     const accessToken = this.auth.accessToken();
     if (!accessToken) return throwError(() => new Error('No hay una sesión activa'));
-    return this.http.get<ApiResponse<ReclamoBackend[]>>(BACKEND_ENDPOINTS.reclamos.misReclamos, {
+    const params = this.paginationParams(query);
+    return this.http.get<ApiResponse<ReclamosPaginadosBackend | ReclamoBackend[]>>(BACKEND_ENDPOINTS.reclamos.misReclamos, {
       headers: new HttpHeaders({ Authorization: `Bearer ${accessToken}` }),
-    }).pipe(map(response => this.unwrap(response).map(reclamo => this.toVista(reclamo))));
+      params,
+    }).pipe(map(response => {
+      const page = this.unwrap(response);
+      if (Array.isArray(page)) {
+        const limit = Number(query.limit ?? '10');
+        const offset = Number(query.offset ?? '0');
+        const items = page.slice(offset, offset + limit);
+        return {
+          items: items.map(reclamo => this.toVista(reclamo)),
+          limit,
+          offset,
+          total: page.length,
+          hasNext: offset + limit < page.length,
+        };
+      }
+      return { ...page, items: page.items.map(reclamo => this.toVista(reclamo)) };
+    }));
   }
 
   historial(id: string): Observable<Seguimiento[]> {
@@ -112,7 +138,7 @@ export class ReclamosService {
       id: reclamo.recCodigo,
       numero: `${reclamo.recCodigo}`,
       asunto: reclamo.recMotivo?.trim() || `Reclamo ${reclamo.recCodigo}`,
-      serDescri: reclamo.serDescri?.trim() || 'Sin servicio informado.',
+      serDescri: reclamo.recServicio === null ? 'Sin servicio informado.' : `Servicio ${reclamo.recServicio}`,
       descripcion: reclamo.recMotivo?.trim() || 'Sin descripción disponible.',
       estado,
       prioridad: this.toPrioridadVista(reclamo.recPrioridad),

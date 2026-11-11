@@ -43,7 +43,7 @@ type StatusFilter = 'todos' | EstadoReclamo;
               </article>
             }</div>
             <nav class="pagination" aria-label="Paginación de reclamos">
-              <span>Mostrando {{ claims().length }} reclamos · Página {{ page() + 1 }}</span>
+              <span>Mostrando {{ claims().length }} de {{ total() }} reclamos · Página {{ page() + 1 }}</span>
               <span class="pagination-status" [class.has-next]="hasNextPage()" [class.is-last]="!hasNextPage()" aria-live="polite"><i aria-hidden="true"></i>{{ paginationMessage() }}</span>
               <div>
                 <button type="button" class="previous" aria-label="Página anterior" title="Página anterior" (click)="previousPage()" [disabled]="page() === 0 || loading()"><app-icon name="chevron-left" [size]="17" /></button>
@@ -74,6 +74,7 @@ export class ReclamosComponent {
   readonly page = signal(0);
   readonly loading = signal(false);
   readonly hasNextPage = signal(false);
+  readonly total = signal(0);
   readonly priorityModalOpen = signal(false);
   readonly prioritySaving = signal(false);
   readonly selectedPriority = signal<PrioridadReclamo>('media');
@@ -102,7 +103,7 @@ export class ReclamosComponent {
   readonly priorityCounts = computed<ReclamosPriorityCounts>(() => ({ alta: this.priorityCount('alta'), media: this.priorityCount('media'), baja: this.priorityCount('baja') }));
   readonly summary = computed(() => {
     const list = this.all();
-    return [{ label: 'Totales', count: list.length, class: 'total', icon: 'clipboard-list', detail: 'Todos los reclamos' }, { label: RECLAMO_ESTADO_ETIQUETAS[RECLAMO_ESTADOS.RECIBIDOS], count: list.filter(item => item.estado === RECLAMO_ESTADOS.RECIBIDOS).length, class: RECLAMO_ESTADOS.RECIBIDOS, icon: 'file-stack', detail: 'Pendientes de asignar' }, { label: RECLAMO_ESTADO_ETIQUETAS[RECLAMO_ESTADOS.EN_CURSO], count: list.filter(item => item.estado === RECLAMO_ESTADOS.EN_CURSO).length, class: RECLAMO_ESTADOS.EN_CURSO, icon: 'square-chart-gantt', detail: 'En proceso de resolución' }, { label: RECLAMO_ESTADO_ETIQUETAS[RECLAMO_ESTADOS.FINALIZADO], count: list.filter(item => item.estado === RECLAMO_ESTADOS.FINALIZADO).length, class: RECLAMO_ESTADOS.FINALIZADO, icon: 'check', detail: 'Resueltos' }];
+    return [{ label: 'Totales', count: this.total(), class: 'total', icon: 'clipboard-list', detail: 'Todos los reclamos' }, { label: RECLAMO_ESTADO_ETIQUETAS[RECLAMO_ESTADOS.RECIBIDOS], count: list.filter(item => item.estado === RECLAMO_ESTADOS.RECIBIDOS).length, class: RECLAMO_ESTADOS.RECIBIDOS, icon: 'file-stack', detail: 'Pendientes de asignar' }, { label: RECLAMO_ESTADO_ETIQUETAS[RECLAMO_ESTADOS.EN_CURSO], count: list.filter(item => item.estado === RECLAMO_ESTADOS.EN_CURSO).length, class: RECLAMO_ESTADOS.EN_CURSO, icon: 'square-chart-gantt', detail: 'En proceso de resolución' }, { label: RECLAMO_ESTADO_ETIQUETAS[RECLAMO_ESTADOS.FINALIZADO], count: list.filter(item => item.estado === RECLAMO_ESTADOS.FINALIZADO).length, class: RECLAMO_ESTADOS.FINALIZADO, icon: 'check', detail: 'Resueltos' }];
   });
   constructor() {
     this.route.queryParamMap.subscribe(params => {
@@ -149,16 +150,16 @@ export class ReclamosComponent {
     const request = ++this.requestId;
     this.loading.set(true);
     // Se solicita un registro adicional para confirmar si existe una página siguiente.
-    this.service.misReclamos().subscribe({
-      next: claims => {
+    this.service.misReclamos({ limit: String(this.pageSize), offset: String(this.page() * this.pageSize) }).subscribe({
+      next: result => {
         if (request !== this.requestId) return;
-        const start = this.page() * this.pageSize;
-        this.hasNextPage.set(claims.length > start + this.pageSize);
+        this.hasNextPage.set(result.hasNext);
+        this.total.set(result.total);
         const states = this.routeStates();
-        const pageClaims = claims.slice(start, start + this.pageSize);
+        const pageClaims = result.items;
         this.all.set(states.length ? pageClaims.filter(claim => states.includes(claim.estado)) : pageClaims);
       },
-      error: () => { if (request === this.requestId) { this.all.set([]); this.hasNextPage.set(false); this.loading.set(false); } },
+      error: () => { if (request === this.requestId) { this.all.set([]); this.hasNextPage.set(false); this.total.set(0); this.loading.set(false); } },
       complete: () => { if (request === this.requestId) this.loading.set(false); },
     });
   }

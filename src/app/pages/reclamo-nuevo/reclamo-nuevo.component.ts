@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { finalize } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, of, Subject, Subscription, switchMap, takeUntil } from 'rxjs';
 import { AuthService } from '../../core/Services/auth.service';
 import { ReclamosApiService } from '../../core/Services/reclamos-api.service';
 import { ClientesService } from '../../core/Services/clientes.service';
@@ -40,7 +41,7 @@ import { MotivoReclamo } from '../../core/interfaces/motivo-reclamo.interface';
           @if (loadingMotivos()) {
             <p class="status" role="status">Cargando motivos de apertura…</p>
           } @else if (motivosError(); as error) {
-            <section class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/><span>{{ error }}</span><button type="button" (click)="loadMotivos()">Reintentar</button></section>
+            <section class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/><span>{{ error }}</span><button type="button" (click)="loadMotivos(true)">Reintentar</button></section>
           } @else {
             <div class="motivo-picker"><button id="motivo" type="button" class="motivo-trigger" [attr.aria-expanded]="motivosMenuOpen()" aria-haspopup="listbox" aria-label="Seleccionar motivo" (click)="toggleMotivosMenu()"><span [class.placeholder]="!selectedMotivoLabel()">{{ selectedMotivoLabel() || 'Seleccioná un motivo' }}</span><app-icon name="chevron-down" [size]="18"/></button>@if (motivosMenuOpen()) {<ul class="motivo-options" role="listbox" aria-label="Motivos de apertura">@for (motivo of motivos(); track motivo.mtrCodigo) {<li><button type="button" role="option" [attr.aria-selected]="form.controls.motivo.value === motivo.mtrDescri" [class.selected]="form.controls.motivo.value === motivo.mtrDescri" (click)="selectMotivo(motivo)"><span>{{ motivo.mtrDescri }}</span><app-icon name="check" [size]="17"/></button></li>}</ul>}</div>
             @if (!motivos().length) { <p class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/>No hay motivos de apertura disponibles.</p> }
@@ -51,7 +52,7 @@ import { MotivoReclamo } from '../../core/interfaces/motivo-reclamo.interface';
         @if (loadingServices()) {
           <p class="status" role="status">Cargando servicios…</p>
         } @else if (servicesError(); as error) {
-          <section class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/><span>{{ error }}</span><button type="button" (click)="loadServices()">Reintentar</button></section>
+          <section class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/><span>{{ error }}</span><button type="button" (click)="loadServices(true)">Reintentar</button></section>
         } @else {
           <div class="service-picker"><button id="servicio" type="button" class="service-trigger" [attr.aria-expanded]="servicesMenuOpen()" aria-label="Seleccionar servicio" (click)="toggleServicesMenu()"><span>{{ selectedServiceLabel() || 'Seleccioná un servicio' }}</span><app-icon name="chevron-down" [size]="18"/></button>@if (servicesMenuOpen()) {<ul class="service-options" role="listbox" aria-label="Servicios disponibles">@for (service of services(); track service.serCodigo) {<li><button type="button" [class.selected]="form.controls.servicio.value === service.serCodigo" (click)="selectService(service)">{{ serviceLabel(service) }}</button></li>}</ul>}</div>
           @if (!services().length) { <p class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/>No hay servicios disponibles para seleccionar.</p> }
@@ -71,7 +72,7 @@ import { MotivoReclamo } from '../../core/interfaces/motivo-reclamo.interface';
   styleUrl: './reclamo-nuevo.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ReclamoNuevoComponent implements OnDestroy {
+export class ReclamoNuevoComponent {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(ReclamosApiService);
   private readonly clientesService = inject(ClientesService);
@@ -79,6 +80,7 @@ export class ReclamoNuevoComponent implements OnDestroy {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly services = signal<Servicio[]>([]);
   readonly loadingServices = signal(false);
   readonly servicesError = signal<string | null>(null);
@@ -98,23 +100,54 @@ export class ReclamoNuevoComponent implements OnDestroy {
   readonly servicesMenuOpen = signal(false);
   readonly motivosMenuOpen = signal(false);
   readonly form = this.fb.nonNullable.group({ cliente: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]], motivo: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(1000)]], servicio: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]] });
-  private searchTimer: ReturnType<typeof setTimeout> | undefined;
-  private searchRequest = 0;
+  private readonly clientSearchRequests = new Subject<string>();
+  private readonly cancelClientSearch = new Subject<void>();
+  private loadMoreSubscription: Subscription | null = null;
   private readonly clientPageSize = 20;
 
-  constructor() { this.loadServices(); this.loadMotivos(); }
+  constructor() {
+    this.loadServices();
+    this.loadMotivos();
+    this.clientSearchRequests.pipe(
+      map(value => value.trim()),
+      debounceTime(350),
+      distinctUntilChanged(),
+      filter(query => this.isClientSearchValid(query)),
+      switchMap(query => {
+        this.loadingClients.set(true);
+        this.clientsError.set(null);
+        return this.clientesService.buscar(query, this.clientPageSize, 0).pipe(
+          map(response => ({ query, response, error: null as unknown })),
+          catchError(error => of({ query, response: null, error })),
+          takeUntil(this.cancelClientSearch),
+          finalize(() => {
+            if (this.clientSearch().trim() === query) this.loadingClients.set(false);
+          }),
+        );
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(result => {
+      if (result.error) {
+        this.clientsError.set(this.apiErrorMessage(result.error, 'No pudimos buscar los clientes. Intentá nuevamente.'));
+        return;
+      }
+      const clients = result.response?.data ?? [];
+      this.clients.set(this.validClients(clients));
+      this.hasMoreClients.set(clients.length === this.clientPageSize);
+    });
+  }
 
-  loadMotivos(): void {
+  loadMotivos(forceRefresh = false): void {
     this.loadingMotivos.set(true); this.motivosError.set(null);
-    this.motivosService.apertura().pipe(finalize(() => this.loadingMotivos.set(false))).subscribe({
+    this.motivosService.apertura({ forceRefresh }).pipe(finalize(() => this.loadingMotivos.set(false))).subscribe({
       next: motivos => this.motivos.set(motivos),
       error: error => this.motivosError.set(this.apiErrorMessage(error, 'No pudimos cargar los motivos de apertura. Intentá nuevamente.')),
     });
   }
 
-  loadServices(): void {
+  loadServices(forceRefresh = false): void {
     this.loadingServices.set(true); this.servicesError.set(null);
-    this.api.obtenerServicios().subscribe({
+    this.api.obtenerServicios({ forceRefresh }).subscribe({
       next: services => this.services.set((services ?? []).filter(service => /^[1-9]\d*$/.test(service.serCodigo))),
       error: error => this.servicesError.set(this.apiErrorMessage(error, 'No pudimos cargar los servicios. Intentá nuevamente.')),
       complete: () => this.loadingServices.set(false),
@@ -127,21 +160,36 @@ export class ReclamoNuevoComponent implements OnDestroy {
     this.selectedClient.set(null);
     this.form.controls.cliente.setValue('');
     this.clients.set([]); this.clientsError.set(null); this.hasMoreClients.set(false); this.loadingClients.set(false); this.loadingMoreClients.set(false);
-    if (this.searchTimer) clearTimeout(this.searchTimer);
-    const request = ++this.searchRequest;
+    this.cancelClientSearch.next();
+    this.loadMoreSubscription?.unsubscribe();
+    this.loadMoreSubscription = null;
+    this.clientSearchRequests.next(value);
     if (!this.isClientSearchValid(query)) { this.loadingClients.set(false); return; }
-    this.searchTimer = setTimeout(() => this.searchClients(query, 0, request), 350);
   }
 
   loadMoreClients(): void {
     const query = this.clientSearch().trim();
     if (!this.hasMoreClients() || this.loadingMoreClients() || !this.isClientSearchValid(query)) return;
-    this.searchClients(query, this.clients().length, ++this.searchRequest);
+    this.loadingMoreClients.set(true);
+    this.clientsError.set(null);
+    this.loadMoreSubscription = this.clientesService.buscar(query, this.clientPageSize, this.clients().length).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: response => {
+        const clients = response.data ?? [];
+        this.clients.set([...this.clients(), ...this.validClients(clients)]);
+        this.hasMoreClients.set(clients.length === this.clientPageSize);
+      },
+      error: error => this.clientsError.set(this.apiErrorMessage(error, 'No pudimos buscar los clientes. Intentá nuevamente.')),
+      complete: () => this.loadingMoreClients.set(false),
+    });
   }
 
   selectClient(client: Cliente): void {
-    if (this.searchTimer) clearTimeout(this.searchTimer);
-    ++this.searchRequest;
+    this.cancelClientSearch.next();
+    this.loadMoreSubscription?.unsubscribe();
+    this.loadMoreSubscription = null;
+    this.clientSearchRequests.next('');
     this.selectedClient.set(client);
     this.clientSearch.set(this.clientLabel(client));
     this.form.controls.cliente.setValue(String(client.cliCodigo));
@@ -159,8 +207,6 @@ export class ReclamoNuevoComponent implements OnDestroy {
 
   onFilesSelected(files: FileList | null): void { this.selectedFiles.set(files ? Array.from(files) : []); }
 
-  ngOnDestroy(): void { if (this.searchTimer) clearTimeout(this.searchTimer); ++this.searchRequest; }
-
   submit(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid || this.loadingServices() || this.servicesError() || !this.services().length) return;
@@ -177,25 +223,8 @@ export class ReclamoNuevoComponent implements OnDestroy {
   showError(control: 'cliente' | 'motivo' | 'servicio'): boolean { const field = this.form.controls[control]; return field.touched && field.invalid; }
   clientLabel(client: Cliente): string { return `${client.cliCodigo} — ${client.cliNombre}`; }
   serviceLabel(service: Servicio): string { return `${service.serCodigo} — ${service.serDescri?.trim() || 'Sin descripción'}`; }
-  private searchClients(query: string, offset: number, request: number): void {
-    if (offset === 0) this.loadingClients.set(true); else this.loadingMoreClients.set(true);
-    this.clientsError.set(null);
-    this.clientesService.buscar(query, this.clientPageSize, offset).subscribe({
-      next: response => {
-        if (request !== this.searchRequest) return;
-        const clients = response.data ?? [];
-        const validClients = clients.filter(client => Number.isInteger(client.cliCodigo) && client.cliCodigo > 0 && Boolean(client.cliNombre?.trim()));
-        this.clients.set(offset === 0 ? validClients : [...this.clients(), ...validClients]);
-        this.hasMoreClients.set(clients.length === this.clientPageSize);
-      },
-      error: error => {
-        if (request === this.searchRequest) this.clientsError.set(this.apiErrorMessage(error, 'No pudimos buscar los clientes. Intentá nuevamente.'));
-      },
-      complete: () => {
-        if (request !== this.searchRequest) return;
-        this.loadingClients.set(false); this.loadingMoreClients.set(false);
-      },
-    });
+  private validClients(clients: Cliente[]): Cliente[] {
+    return clients.filter(client => Number.isInteger(client.cliCodigo) && client.cliCodigo > 0 && Boolean(client.cliNombre?.trim()));
   }
   private isClientSearchValid(query: string): boolean {
     return /^\d+$/.test(query) ? !/^0+$/.test(query) : query.length >= 2;

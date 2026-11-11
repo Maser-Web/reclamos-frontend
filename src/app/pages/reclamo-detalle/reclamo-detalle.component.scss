@@ -8,31 +8,31 @@
 .intro-icon { display:grid; width:90px; height:90px; place-items:center; border-radius:22px; background:#fff3bd; color:#715700; }
 .detail-intro h1 { margin:0; color:#091531; font-size:clamp(2rem,3vw,3rem); line-height:1.05; letter-spacing:-.045em; }
 .detail-intro p { margin:7px 0 0; color:#63708a; font-size:20px; }
-.detail-card { padding:28px 36px 32px; border:1px solid #e5e8ef; border-radius:22px; background:#fff; box-shadow:0 14px 34px rgb(20 34 62 / 10%); }
+.detail-card { padding:24px 32px; border:1px solid #e5e8ef; border-radius:18px; background:#fff; box-shadow:0 12px 28px rgb(20 34 62 / 8%); }
 .desktop-claim-summary { display:flex; align-items:center; justify-content:space-between; gap:20px; }
-.desktop-status { display:inline-flex; align-items:center; gap:12px; padding:10px 30px; border-radius:99px; background:#ffe7e9; color:#d3131b; font-size:18px; font-weight:800; }
-.desktop-status i { width:16px; height:16px; border-radius:50%; background:#e50914; }
-.desktop-claim-summary time { color:#586681; font-size:18px; font-weight:600; }
-.desktop-claim-title { display:flex; align-items:center; gap:46px; margin:28px 5px 30px; }
+.desktop-status { display:inline-flex; align-items:center; gap:10px; padding:8px 20px; border-radius:99px; background:#ffe7e9; color:#d3131b; font-size:16px; font-weight:800; }
+.desktop-status i { width:12px; height:12px; border-radius:50%; background:#e50914; }
+.desktop-claim-summary time { color:#586681; font-size:15px; font-weight:600; }
+.desktop-claim-title { display:flex; align-items:center; gap:34px; margin:22px 4px 24px; }
 .desktop-claim-title > div { display:grid; gap:4px; }
-.desktop-claim-title span { color:#596680; font-size:18px; }
-.desktop-claim-title strong { color:#08142e; font-size:55px; line-height:1; letter-spacing:-.06em; }
-.desktop-claim-title b { color:#09142e; font-size:23px; }
-.desktop-claim-title > i { width:1px; height:63px; background:#d7dce6; }
-.info-grid { display:grid; grid-template-columns:1fr 1fr; gap:28px; }
-.info { display:flex; align-items:center; gap:20px; min-width:0; padding:14px 26px; border:0; border-radius:17px; background:#f5f6f9; }
-.info-icon { display:grid; flex:0 0 auto; width:56px; height:56px; place-items:center; border-radius:17px; background:#eceff5; color:#07132e; }
+.desktop-claim-title span { color:#596680; font-size:16px; }
+.desktop-claim-title strong { color:#08142e; font-size:48px; line-height:1; letter-spacing:-.04em; }
+.desktop-claim-title b { color:#09142e; font-size:20px; }
+.desktop-claim-title > i { width:1px; height:54px; background:#d7dce6; }
+.info-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.info { display:flex; align-items:center; gap:16px; min-width:0; padding:12px 20px; border:0; border-radius:14px; background:#f5f6f9; }
+.info-icon { display:grid; flex:0 0 auto; width:48px; height:48px; place-items:center; border-radius:14px; background:#eceff5; color:#07132e; }
 .info > div { display:grid; min-width:0; gap:3px; }
-.info > div > span,.dates p span { color:#596680; font-size:16px; }
-.info b { overflow-wrap:anywhere; color:#08142e; font-size:20px; }
+.info > div > span,.dates p span { color:#596680; font-size:15px; }
+.info b { overflow-wrap:anywhere; color:#08142e; font-size:18px; }
 .mobile-label { display:none; }
-.dates { display:grid; grid-template-columns:1fr 1px 1fr; align-items:center; gap:28px; margin-top:26px; padding:21px 26px; border:0; border-top:1px solid #e2e6ed; border-bottom:1px solid #e2e6ed; border-radius:0; background:transparent; }
-.dates > div { display:flex; align-items:center; gap:20px; }
-.dates > i { height:48px; background:#d7dce6; }
+.dates { display:grid; grid-template-columns:1fr 1px 1fr; align-items:center; gap:22px; margin-top:20px; padding:16px 20px; border:0; border-top:1px solid #e2e6ed; border-bottom:1px solid #e2e6ed; border-radius:0; background:transparent; }
+.dates > div { display:flex; align-items:center; gap:16px; }
+.dates > i { height:42px; background:#d7dce6; }
 .dates p { display:grid; gap:3px; margin:0; }
-.dates b { color:#08142e; font-size:17px; }
-.desktop-actions { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:28px; }
-.desktop-actions app-button .app-button { min-height:64px; font-size:20px; }
+.dates b { color:#08142e; font-size:15px; }
+.desktop-actions { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:20px; }
+.desktop-actions app-button .app-button { min-height:52px; font-size:16px; }
 .desktop-actions app-button .success { background:#ffcf08; color:#07132e; }
 .desktop-priority { width:260px; margin:18px 0 0 auto; }
 .desktop-priority app-button .app-button { min-height:48px; }
@@ -102,6 +102,40 @@
   .priority-overlay { align-items:end; padding:max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
   .priority-modal { width:100%; }
   .detail-mobile-nav button:focus-visible { outline:3px solid #07132e; outline-offset:2px; }
+}
+
+// Escritorio: versión más compacta y centrada
+@include tablet-up {
+  .detail-page { max-width:880px; margin-inline:auto; padding:20px 24px 40px; }
+  .breadcrumbs { gap:10px; font-size:14px; }
+  .breadcrumbs button { width:38px; height:38px; border-radius:11px; }
+  .detail-intro { gap:16px; margin:20px 0 18px; }
+  .intro-icon { width:60px; height:60px; border-radius:16px; }
+  .intro-icon svg,.intro-icon img { max-width:60%; max-height:60%; }
+  .detail-intro h1 { font-size:clamp(1.5rem,2.2vw,2rem); }
+  .detail-intro p { margin-top:4px; font-size:15px; }
+  .detail-card { padding:20px 24px; border-radius:16px; box-shadow:0 8px 20px rgb(20 34 62 / 7%); }
+  .desktop-status { gap:8px; padding:6px 14px; font-size:14px; }
+  .desktop-status i { width:9px; height:9px; }
+  .desktop-claim-summary time { font-size:14px; }
+  .desktop-claim-title { gap:22px; margin:16px 2px 18px; }
+  .desktop-claim-title span { font-size:14px; }
+  .desktop-claim-title strong { font-size:34px; }
+  .desktop-claim-title b { font-size:17px; }
+  .desktop-claim-title > i { height:40px; }
+  .info-grid { gap:12px; }
+  .info { gap:12px; padding:10px 14px; border-radius:12px; }
+  .info-icon { width:38px; height:38px; border-radius:11px; }
+  .info > div > span,.dates p span { font-size:13px; }
+  .info b { font-size:15px; }
+  .dates { gap:16px; margin-top:14px; padding:12px 14px; }
+  .dates > div { gap:12px; }
+  .dates > i { height:34px; }
+  .dates b { font-size:14px; }
+  .desktop-actions { gap:10px; margin-top:16px; }
+  .desktop-actions app-button .app-button { min-height:44px; font-size:15px; }
+  .desktop-priority { width:220px; margin-top:12px; }
+  .desktop-priority app-button .app-button { min-height:42px; }
 }
 
 @media(max-width:420px) {

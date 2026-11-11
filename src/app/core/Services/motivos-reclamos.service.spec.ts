@@ -29,4 +29,15 @@ describe('MotivosReclamosService', () => {
     expect(request.request.method).toBe('GET');
     request.flush({ codigo: 200, mensaje: 'OK', data: [{ mtrCodigo: 3, mtrDescri: 'Resuelto', mtrTipo: 2 }, { mtrCodigo: 4, mtrDescri: 'No usar', mtrTipo: 1 }] });
   });
+
+  it('reutiliza en memoria cada catálogo de motivos', () => {
+    service.apertura().subscribe();
+    service.apertura().subscribe();
+    const request = http.expectOne('http://localhost:7500/motivos-reclamos/apertura');
+    request.flush({ codigo: 200, mensaje: 'OK', data: [] });
+
+    service.apertura().subscribe();
+    http.expectNone('http://localhost:7500/motivos-reclamos/apertura');
+    expect(true).toBeTrue();
+  });
 });

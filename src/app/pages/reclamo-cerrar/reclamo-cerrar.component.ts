@@ -13,7 +13,7 @@ import { MotivoReclamo } from '../../core/interfaces/motivo-reclamo.interface';
 @Component({
   standalone: true,
   imports: [ReactiveFormsModule, AppHeaderComponent, AppButtonComponent],
-  template: `<app-header title="Finalizar reclamo" [showBack]="true" (back)="back()"/><form class="page close-form" [formGroup]="form" (ngSubmit)="submit()"><label>Motivo de cierre *@if (loadingMotivos()) {<p class="notice" role="status">Cargando motivos de clausura…</p>} @else if (motivosError(); as error) {<span class="notice" role="alert">{{ error }}</span><button type="button" class="retry" (click)="loadMotivos()">Reintentar</button>} @else {<select formControlName="motivo"><option value="">Seleccione un motivo</option>@for (motivo of motivos(); track motivo.mtrCodigo) {<option [value]="motivo.mtrDescri">{{ motivo.mtrDescri }}</option>}</select>@if (!motivos().length) {<span class="notice" role="alert">No hay motivos de clausura disponibles.</span>}}</label><label>Comentario de cierre<textarea formControlName="comentario" placeholder="Describa la solución realizada..."></textarea></label><app-button type="submit" label="Finalizar reclamo" icon="check" variant="success" [disabled]="form.invalid || saving() || loadingMotivos() || !!motivosError() || !motivos().length"/></form>`,
+  template: `<app-header title="Finalizar reclamo" [showBack]="true" (back)="back()"/><form class="page close-form" [formGroup]="form" (ngSubmit)="submit()"><label>Motivo de cierre *@if (loadingMotivos()) {<p class="notice" role="status">Cargando motivos de clausura…</p>} @else if (motivosError(); as error) {<span class="notice" role="alert">{{ error }}</span><button type="button" class="retry" (click)="loadMotivos(true)">Reintentar</button>} @else {<select formControlName="motivo"><option value="">Seleccione un motivo</option>@for (motivo of motivos(); track motivo.mtrCodigo) {<option [value]="motivo.mtrDescri">{{ motivo.mtrDescri }}</option>}</select>@if (!motivos().length) {<span class="notice" role="alert">No hay motivos de clausura disponibles.</span>}}</label><label>Comentario de cierre<textarea formControlName="comentario" placeholder="Describa la solución realizada..."></textarea></label><app-button type="submit" label="Finalizar reclamo" icon="check" variant="success" [disabled]="form.invalid || saving() || loadingMotivos() || !!motivosError() || !motivos().length"/></form>`,
   styleUrl: './reclamo-cerrar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -33,9 +33,9 @@ export class ReclamoCerrarComponent {
 
   constructor() { this.loadMotivos(); }
 
-  loadMotivos(): void {
+  loadMotivos(forceRefresh = false): void {
     this.loadingMotivos.set(true); this.motivosError.set(null);
-    this.motivosService.clausura().pipe(finalize(() => this.loadingMotivos.set(false))).subscribe({
+    this.motivosService.clausura({ forceRefresh }).pipe(finalize(() => this.loadingMotivos.set(false))).subscribe({
       next: motivos => this.motivos.set(motivos),
       error: () => this.motivosError.set('No pudimos cargar los motivos de clausura. Intentá nuevamente.'),
     });
