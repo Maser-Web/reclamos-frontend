@@ -6,7 +6,6 @@ export type EstadoReclamoBackend = 'RECIBIDO' | 'ASIGNADO' | 'FINALIZADO';
 export interface CrearReclamoPayload {
   motivo: string;
   usu_codigo: number;
-  servicio: number;
 }
 
 export interface ReclamosPaginationQuery {
@@ -34,6 +33,8 @@ export interface ReclamoBackend {
   recFecha: string | null;
   recHora: string | null;
   recMotivo: string | null;
+  /** Descripción del motivo, incluida cuando el backend resuelve el catálogo de motivos. */
+  mtrDescri?: string | null;
   recTcid: string | null;
   /** Nombre del cliente, disponible al consultar el detalle: GET /reclamos/:id. */
   cliNombre?: string | null;

@@ -21,16 +21,18 @@ import { RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/
         <section class="mobile-claim-hero">
           <header class="detail-mobile-nav">
             <button type="button" aria-label="Volver a reclamos" (click)="back()"><app-icon name="chevron-left" [size]="28" /></button>
-            <h2>Reclamos</h2>
+            <span class="detail-nav-spacer" aria-hidden="true"></span>
             <button type="button" aria-label="Cerrar sesión" (click)="logout()"><app-icon name="log-out" [size]="22" /></button>
           </header>
           <div class="mobile-hero-copy"><h1><span class="hero-maser">Maser</span><span class="hero-link">Link</span></h1><p>Gestión y resolución<br />de reclamos</p></div>
           <img src="assets/reclamo-note.svg" alt="" aria-hidden="true" />
-          <div class="mobile-claim-summary">
-            <span>N.° de reclamo</span><strong>{{ r.numero }}</strong><p>{{ r.descripcion }}</p>
-            <div><b [class]="'mobile-status '+r.estado"><app-icon [name]="r.estado === estados.FINALIZADO ? 'check' : 'inbox'" [size]="20" />{{ statusLabel(r.estado) }}</b><time><app-icon name="calendar-days" [size]="22" />{{ date(r.fechaActualizacion) }}</time></div>
-          </div>
         </section>
+
+        <div class="mobile-claim-summary">
+            <p class="mobile-claim-number"><strong>#{{ r.numero }}</strong></p>
+            <p class="mobile-claim-description">{{ r.descripcion }}</p>
+            <div><b [class]="'mobile-status '+r.estado"><app-icon [name]="r.estado === estados.FINALIZADO ? 'check' : 'inbox'" [size]="20" />{{ statusLabel(r.estado) }}</b><time><app-icon name="calendar-days" [size]="22" />{{ date(r.fechaActualizacion) }}</time></div>
+        </div>
 
         <ol class="mobile-stepper" aria-label="Progreso del reclamo">
           @for (step of steps; track step.label; let last = $last) {
@@ -43,7 +45,7 @@ import { RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/
           <div class="desktop-claim-title"><div><span>N.° de reclamo</span><strong>{{ r.numero }}</strong></div><i></i><div><span>Descripción</span><b>{{ r.descripcion }}</b></div></div>
 
           <div class="info-grid">
-            <div class="info"><span class="info-icon"><app-icon name="user-round" /></span><div><span>Cliente / cuenta</span><b>{{ r.clienteId || 'Sin información' }}</b></div></div>
+            <div class="info"><span class="info-icon"><app-icon name="user-round" /></span><div><span>Cliente / cuenta</span><b>{{ r.clienteId || 'Sin información' }}</b>@if (r.cuentaNumero) {<small>Cuenta #{{ r.cuentaNumero }}</small>}</div></div>
             <div class="info"><span class="info-icon"><app-icon name="file-text" /></span><div><span class="desktop-label">Derivado a</span><span class="mobile-label">Empleado asignada</span><b>{{ r.responsableNombre || r.responsableId || 'Sin asignar' }}</b></div></div>
           </div>
 
@@ -52,7 +54,7 @@ import { RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/
           <div class="desktop-actions">
             @if (r.estado !== estados.FINALIZADO) {<app-button label="Finalizar reclamo" icon="check" variant="success" (click)="goClose()" />} @else {<p class="notice">Este reclamo ya está finalizado.</p>}
             <app-button label="Ver seguimiento" icon="clipboard-list" variant="secondary" (click)="goTracking()" />
-            <app-button label="Adherir cliente" icon="user-round" variant="secondary" [disabled]="!canAdhereClient" (click)="goAdhereClient()" />
+            <app-button label="Derivar reclamo" icon="refresh" variant="secondary" (click)="goDerive()" />
           </div>
         </article>
 
@@ -60,7 +62,7 @@ import { RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/
         <div class="mobile-actions">
           @if (r.estado !== estados.FINALIZADO) {<app-button label="Finalizar reclamo" icon="check" variant="success" (click)="goClose()" />} @else {<p class="notice">Este reclamo ya está finalizado.</p>}
           <app-button label="Ver seguimiento" icon="clipboard-list" variant="secondary" (click)="goTracking()" />
-          <app-button label="Adherir cliente" icon="user-round" variant="secondary" [disabled]="!canAdhereClient" (click)="goAdhereClient()" />
+          <app-button label="Derivar reclamo" icon="refresh" variant="secondary" (click)="goDerive()" />
         </div>
       </section>
     } @else {
@@ -87,7 +89,6 @@ export class ReclamoDetalleComponent {
   private readonly auth = inject(AuthService);
   readonly router = inject(Router);
   readonly reclamo = signal<Reclamo | null>(null);
-  readonly canAdhereClient = this.auth.puedeAdherirReclamo();
 
   constructor() { this.load(); }
 
@@ -99,7 +100,7 @@ export class ReclamoDetalleComponent {
   assignPriority(): void { const reclamo = this.reclamo(); if (!reclamo || this.prioritySaving()) return; const prioridad = this.selectedPriority(); this.prioritySaving.set(true); this.service.asignarPrioridad(reclamo.id, prioridad).subscribe({ next: () => { this.reclamo.update(actual => actual ? { ...actual, prioridad } : null); this.prioritySaving.set(false); this.closePriorityModal(); void this.notifications.success('Prioridad asignada'); }, error: () => { this.prioritySaving.set(false); void this.notifications.error('No se pudo asignar la prioridad', 'Intentá nuevamente.'); } }); }
   goClose(): void { void this.router.navigate(['/reclamos', this.id(), 'cerrar']); }
   goTracking(): void { void this.router.navigate(['/reclamos', this.id(), 'seguimiento']); }
-  goAdhereClient(): void { if (!this.canAdhereClient) return; void this.router.navigate(['/reclamos', this.id(), 'adherir-cliente']); }
+  goDerive(): void { void this.router.navigate(['/reclamos', this.id(), 'adherir-cliente']); }
   back(): void { void this.router.navigateByUrl('/reclamos'); }
   logout(): void { this.auth.logout(); void this.router.navigateByUrl('/login'); }
   private load(): void { this.service.detail(this.id()).subscribe({ next: reclamo => this.reclamo.set(reclamo) }); }

@@ -9,7 +9,6 @@ import { ClientesService } from '../../core/Services/clientes.service';
 import { MotivosReclamosService } from '../../core/Services/motivos-reclamos.service';
 import { AppButtonComponent, AppHeaderComponent, AppIconComponent } from '../../core/components/ui';
 import { NotificationService } from '../../core/Services/notification.service';
-import { Servicio } from '../../core/interfaces/servicio.interface';
 import { Cliente } from '../../core/interfaces/cliente.interface';
 import { MotivoReclamo } from '../../core/interfaces/motivo-reclamo.interface';
 
@@ -20,7 +19,7 @@ import { MotivoReclamo } from '../../core/interfaces/motivo-reclamo.interface';
     <app-header title="Nuevo reclamo" [showBack]="true" (back)="back()" />
     <main class="page">
       <form class="new-claim-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-        <header><h2>Ingresá tu reclamo</h2><p>Describí el inconveniente y seleccioná el servicio involucrado.</p></header>
+        <header><h2>Ingresá tu reclamo</h2><p>Describí el inconveniente.</p></header>
         <label for="cliente-busqueda">¿A quién corresponde? *</label>
         <input id="cliente-busqueda" type="search" [value]="clientSearch()" (input)="onClientSearch($any($event.target).value)" autocomplete="off" placeholder="Buscá por nombre o código" aria-describedby="cliente-help" />
         <input type="hidden" formControlName="cliente" />
@@ -48,24 +47,11 @@ import { MotivoReclamo } from '../../core/interfaces/motivo-reclamo.interface';
           }
           <div id="motivo-help" class="field-help">@if (showError('motivo')) { <b>Seleccioná un motivo válido.</b> }</div>
         </section>
-        <label for="servicio">Servicio *</label>
-        @if (loadingServices()) {
-          <p class="status" role="status">Cargando servicios…</p>
-        } @else if (servicesError(); as error) {
-          <section class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/><span>{{ error }}</span><button type="button" (click)="loadServices(true)">Reintentar</button></section>
-        } @else {
-          <div class="service-picker"><button id="servicio" type="button" class="service-trigger" [attr.aria-expanded]="servicesMenuOpen()" aria-label="Seleccionar servicio" (click)="toggleServicesMenu()"><span>{{ selectedServiceLabel() || 'Seleccioná un servicio' }}</span><app-icon name="chevron-down" [size]="18"/></button>@if (servicesMenuOpen()) {<ul class="service-options" role="listbox" aria-label="Servicios disponibles">@for (service of services(); track service.serCodigo) {<li><button type="button" [class.selected]="form.controls.servicio.value === service.serCodigo" (click)="selectService(service)">{{ serviceLabel(service) }}</button></li>}</ul>}</div>
-          @if (!services().length) { <p class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/>No hay servicios disponibles para seleccionar.</p> }
-          @if (showError('servicio')) { <p class="field-error">Seleccioná un servicio válido.</p> }
-        }
-        <section class="file-upload" aria-labelledby="archivos-label">
-          <label id="archivos-label" for="archivos">Adjuntar archivos <span>Opcional</span></label>
           <label class="file-picker" for="archivos"><app-icon name="paperclip" [size]="20"/><span><b>Seleccionar archivos</b><small>Podés elegir uno o más documentos.</small></span></label>
           <input id="archivos" class="file-input" type="file" multiple (change)="onFilesSelected($any($event.target).files)" aria-describedby="archivos-help" />
           <div id="archivos-help" class="file-help">@if (selectedFiles().length) {<span>{{ selectedFiles().length }} archivo(s) seleccionado(s)</span><ul>@for (file of selectedFiles(); track file.name + file.size) {<li><app-icon name="paperclip" [size]="14"/>{{ file.name }}</li>}</ul>} @else {<span>Sin archivos seleccionados.</span>}</div>
-        </section>
         @if (sessionError(); as error) { <p class="status error" role="alert"><app-icon name="circle-alert" [size]="18"/>{{ error }}</p> }
-        <app-button type="submit" label="Crear reclamo" icon="plus" [disabled]="form.invalid || loadingServices() || !!servicesError() || !services().length || loadingMotivos() || !!motivosError() || !motivos().length || saving()" />
+        <app-button type="submit" label="Crear reclamo" icon="plus" [disabled]="form.invalid || loadingMotivos() || !!motivosError() || !motivos().length || saving()" />
       </form>
     </main>
   `,
@@ -81,9 +67,6 @@ export class ReclamoNuevoComponent {
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
-  readonly services = signal<Servicio[]>([]);
-  readonly loadingServices = signal(false);
-  readonly servicesError = signal<string | null>(null);
   readonly motivos = signal<MotivoReclamo[]>([]);
   readonly loadingMotivos = signal(false);
   readonly motivosError = signal<string | null>(null);
@@ -97,16 +80,14 @@ export class ReclamoNuevoComponent {
   readonly sessionError = signal<string | null>(null);
   readonly saving = signal(false);
   readonly selectedFiles = signal<File[]>([]);
-  readonly servicesMenuOpen = signal(false);
   readonly motivosMenuOpen = signal(false);
-  readonly form = this.fb.nonNullable.group({ cliente: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]], motivo: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(1000)]], servicio: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]] });
+  readonly form = this.fb.nonNullable.group({ cliente: ['', [Validators.required, Validators.pattern(/^[1-9]\d*$/)]], motivo: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(1000)]] });
   private readonly clientSearchRequests = new Subject<string>();
   private readonly cancelClientSearch = new Subject<void>();
   private loadMoreSubscription: Subscription | null = null;
   private readonly clientPageSize = 20;
 
   constructor() {
-    this.loadServices();
     this.loadMotivos();
     this.clientSearchRequests.pipe(
       map(value => value.trim()),
@@ -142,15 +123,6 @@ export class ReclamoNuevoComponent {
     this.motivosService.apertura({ forceRefresh }).pipe(finalize(() => this.loadingMotivos.set(false))).subscribe({
       next: motivos => this.motivos.set(motivos),
       error: error => this.motivosError.set(this.apiErrorMessage(error, 'No pudimos cargar los motivos de apertura. Intentá nuevamente.')),
-    });
-  }
-
-  loadServices(forceRefresh = false): void {
-    this.loadingServices.set(true); this.servicesError.set(null);
-    this.api.obtenerServicios({ forceRefresh }).subscribe({
-      next: services => this.services.set((services ?? []).filter(service => /^[1-9]\d*$/.test(service.serCodigo))),
-      error: error => this.servicesError.set(this.apiErrorMessage(error, 'No pudimos cargar los servicios. Intentá nuevamente.')),
-      complete: () => this.loadingServices.set(false),
     });
   }
 
@@ -196,9 +168,6 @@ export class ReclamoNuevoComponent {
     this.clients.set([]); this.hasMoreClients.set(false); this.clientsError.set(null); this.loadingClients.set(false); this.loadingMoreClients.set(false);
   }
 
-  toggleServicesMenu(): void { if (this.services().length) this.servicesMenuOpen.update(open => !open); }
-  selectService(service: Servicio): void { this.form.controls.servicio.setValue(service.serCodigo); this.form.controls.servicio.markAsTouched(); this.servicesMenuOpen.set(false); }
-  selectedServiceLabel(): string { const service = this.services().find(item => item.serCodigo === this.form.controls.servicio.value); return service ? this.serviceLabel(service) : ''; }
   toggleMotivosMenu(): void { if (this.motivos().length) this.motivosMenuOpen.update(open => !open); }
   selectMotivo(motivo: MotivoReclamo): void { this.form.controls.motivo.setValue(motivo.mtrDescri); this.form.controls.motivo.markAsTouched(); this.motivosMenuOpen.set(false); }
   selectedMotivoLabel(): string { return this.form.controls.motivo.value; }
@@ -209,10 +178,10 @@ export class ReclamoNuevoComponent {
 
   submit(): void {
     this.form.markAllAsTouched();
-    if (this.form.invalid || this.loadingServices() || this.servicesError() || !this.services().length) return;
+    if (this.form.invalid) return;
     this.saving.set(true); this.sessionError.set(null);
     const value = this.form.getRawValue();
-    this.api.crearReclamo({ motivo: value.motivo.trim(), usu_codigo: Number(value.cliente), servicio: Number(value.servicio) }).subscribe({
+    this.api.crearReclamo({ motivo: value.motivo.trim(), usu_codigo: Number(value.cliente) }).subscribe({
       next: () => { void this.notifications.success('Reclamo creado', 'El reclamo fue registrado correctamente.'); void this.router.navigateByUrl('/reclamos'); },
       error: error => { this.saving.set(false); void this.notifications.error('No se pudo crear el reclamo', this.apiErrorMessage(error, 'Ocurrió un error inesperado. Intentá nuevamente.')); },
       complete: () => this.saving.set(false),
@@ -220,9 +189,8 @@ export class ReclamoNuevoComponent {
   }
 
   back(): void { void this.router.navigateByUrl('/reclamos'); }
-  showError(control: 'cliente' | 'motivo' | 'servicio'): boolean { const field = this.form.controls[control]; return field.touched && field.invalid; }
+  showError(control: 'cliente' | 'motivo'): boolean { const field = this.form.controls[control]; return field.touched && field.invalid; }
   clientLabel(client: Cliente): string { return `${client.cliCodigo} — ${client.cliNombre}`; }
-  serviceLabel(service: Servicio): string { return `${service.serCodigo} — ${service.serDescri?.trim() || 'Sin descripción'}`; }
   private validClients(clients: Cliente[]): Cliente[] {
     return clients.filter(client => Number.isInteger(client.cliCodigo) && client.cliCodigo > 0 && Boolean(client.cliNombre?.trim()));
   }

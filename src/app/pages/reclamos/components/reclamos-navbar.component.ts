@@ -40,7 +40,7 @@ import { AvisosService } from '../../../core/Services/avisos.service';
 export class ReclamosNavbarComponent {
   readonly avisos = inject(AvisosService);
   readonly usuarioNombre = input<string | null>(null);
-  readonly title = input('Reclamos');
+  readonly title = input('');
   readonly showBack = input(false);
   readonly minimalMobile = input(false);
   readonly logoutRequested = output<void>();

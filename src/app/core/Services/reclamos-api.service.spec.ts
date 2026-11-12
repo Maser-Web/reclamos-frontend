@@ -17,7 +17,7 @@ describe('ReclamosApiService', () => {
   afterEach(() => http.verify());
 
   it('creates a claim with only the documented JSON payload and unwraps data', () => {
-    const payload: CrearReclamoPayload = { motivo: 'Sin suministro eléctrico', usu_codigo: 7, servicio: 2 };
+    const payload: CrearReclamoPayload = { motivo: 'Sin suministro eléctrico', usu_codigo: 7 };
     service.crearReclamo(payload).subscribe(reclamo => expect(reclamo?.recCodigo).toBe('99'));
     const request = http.expectOne('http://localhost:7500/reclamos');
     expect(request.request.method).toBe('POST');

@@ -14,8 +14,6 @@
 .new-claim-form input[type=search] + input + .field-help { order:4; }
 .client-results { order:5; }
 .load-more { order:6; }
-.new-claim-form label[for=servicio] { order:10; }
-.service-picker { order:11; }
 .motivo-field { display:grid; gap:10px; order:.5; }
 .motivo-field label { margin-top:8px; font-weight:800; }
 .file-upload { order:30; }
@@ -140,12 +138,6 @@
   cursor:wait;
   opacity:.65
 }
-.service-picker { position:relative; }
-.service-trigger { width:100%; min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 13px; border:1px solid var(--color-border-strong); border-radius:var(--radius-md); background:var(--color-surface); color:var(--color-text); font:600 var(--font-sm) var(--font-family); text-align:left; }
-.service-trigger span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.service-options { position:absolute; z-index:5; top:calc(100% + 4px); right:0; left:0; max-height:184px; margin:0; padding:5px; overflow:auto; list-style:none; border:1px solid #dbe3ef; border-radius:12px; background:#fff; box-shadow:0 12px 26px rgb(38 61 103 / 16%); }
-.service-options button { width:100%; min-height:38px; padding:8px 10px; border:0; border-radius:8px; background:transparent; color:#17233e; font:600 13px/1.25 var(--font-family); text-align:left; }
-.service-options button:hover,.service-options button:focus-visible,.service-options button.selected { background:#fff8d8; color:#071538; }
 .motivo-picker { position:relative; }
 .motivo-trigger { width:100%; min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 13px; border:1px solid #d6b400; border-radius:var(--radius-md); background:#fff; color:#17233e; font:600 var(--font-sm) var(--font-family); text-align:left; transition:border-color 150ms ease, box-shadow 150ms ease; }
 .motivo-trigger:focus-visible,.motivo-trigger[aria-expanded=true] { border-color:#b89900; box-shadow:0 0 0 4px rgb(246 208 0 / 20%); outline:0; }
@@ -182,8 +174,6 @@
   .field-help {
     font-size:.75rem
   }
-  .service-trigger { min-height:46px; font-size:.8125rem; }
-  .service-options { max-height:min(184px,30dvh); }
   .status {
     font-size:.875rem
   }
