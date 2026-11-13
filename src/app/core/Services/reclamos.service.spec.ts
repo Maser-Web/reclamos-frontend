@@ -21,7 +21,7 @@ describe('ReclamosService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection(), provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: { accessToken: signal('token-de-prueba') } }] });
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection(), provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: { accessToken: signal('token-de-prueba'), usuarioCodigo: signal(42) } }] });
     service = TestBed.inject(ReclamosService);
     http = TestBed.inject(HttpTestingController);
   });
@@ -93,6 +93,19 @@ describe('ReclamosService', () => {
 
     const request = http.expectOne(request => request.url === 'http://localhost:7500/reclamos/mis-reclamos');
     request.flush({ codigo: 200, mensaje: 'OK', data: [reclamoBackend, { ...reclamoBackend, recCodigo: '124' }] });
+  });
+
+  it('falls back to the user claims endpoint when the local API treats mis-reclamos as an id', () => {
+    service.misReclamos({ limit: '10', offset: '0' }).subscribe(page => {
+      expect(page.items).toEqual([jasmine.objectContaining({ id: '123' })]);
+      expect(page.total).toBe(1);
+    });
+
+    http.expectOne('http://localhost:7500/reclamos/mis-reclamos?limit=10&offset=0')
+      .flush({ codigo: 400, mensaje: 'El id del reclamo debe ser un entero positivo', data: null }, { status: 400, statusText: 'Bad Request' });
+    const fallback = http.expectOne('http://localhost:7500/reclamos/usuario/42');
+    expect(fallback.request.method).toBe('GET');
+    fallback.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: [reclamoBackend] });
   });
 
   it('requests a claim history by claim code', () => {

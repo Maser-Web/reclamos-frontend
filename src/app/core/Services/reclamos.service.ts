@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { map, Observable, throwError } from 'rxjs';
+import { catchError, map, Observable, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { BACKEND_ENDPOINTS } from '../endpoints/backend.endpoints';
 import { ApiResponse } from '../interfaces/api-response.interface';
@@ -61,18 +61,18 @@ export class ReclamosService {
     }).pipe(map(response => {
       const page = this.unwrap(response);
       if (Array.isArray(page)) {
-        const limit = Number(query.limit ?? '10');
-        const offset = Number(query.offset ?? '0');
-        const items = page.slice(offset, offset + limit);
-        return {
-          items: items.map(reclamo => this.toVista(reclamo)),
-          limit,
-          offset,
-          total: page.length,
-          hasNext: offset + limit < page.length,
-        };
+        return this.paginate(page.map(reclamo => this.toVista(reclamo)), query);
       }
       return { ...page, items: page.items.map(reclamo => this.toVista(reclamo)) };
+    }), catchError(error => {
+      // El backend local anterior no registra /mis-reclamos antes de /:id y
+      // responde 400 al interpretar "mis-reclamos" como un identificador.
+      // Conservamos el endpoint autenticado como primera opción y usamos el
+      // listado por usuario únicamente para esa implementación compatible.
+      if (this.statusOf(error) !== 400) return throwError(() => error);
+      const usuarioId = this.auth.usuarioCodigo();
+      if (!usuarioId) return throwError(() => error);
+      return this.byUsuario(String(usuarioId)).pipe(map(items => this.paginate(items, query)));
     }));
   }
 
@@ -120,6 +120,23 @@ export class ReclamosService {
     }
     if (!/^\d+$/.test(offset)) throw new Error('El offset debe ser un entero mayor o igual a 0');
     return new HttpParams().set('limit', limit).set('offset', offset);
+  }
+
+  private paginate(items: ReclamoVista[], query: ReclamosPaginationQuery): ReclamosPaginados {
+    const limit = Number(query.limit ?? '10');
+    const offset = Number(query.offset ?? '0');
+    return {
+      items: items.slice(offset, offset + limit),
+      limit,
+      offset,
+      total: items.length,
+      hasNext: offset + limit < items.length,
+    };
+  }
+
+  private statusOf(error: unknown): number | undefined {
+    return typeof error === 'object' && error !== null && 'status' in error &&
+      typeof error.status === 'number' ? error.status : undefined;
   }
 
   private unwrap<T>(response: ApiResponse<T>): T {

@@ -25,7 +25,7 @@ type StepperItem = { estado: EstadoReclamo; label: string; event?: Seguimiento; 
               <li [class.completed]="step.completed" [class.current]="step.current">
                 <div class="step-marker" aria-hidden="true">@if (step.completed) {<app-icon name="check" [size]="16"/>} @else {<i></i>}</div>
                 @if (!last) {<span class="step-line" aria-hidden="true"></span>}
-                <div class="step-content"><strong>{{ step.label }}</strong>@if (step.event; as event) {<span>{{ event.titulo }}</span>@if (event.detalle) {<small>{{ event.detalle }}</small>}<time>{{ formatDate(event.fecha) }} · {{ formatTime(event) }}</time>} @else if (step.current) {<span>Estado actual</span><small>El reclamo fue recibido y está pendiente de atención.</small>} @else {<span>Pendiente</span>}</div>
+                <div class="step-content"><strong>{{ step.label }}</strong>@if (step.event; as event) {<span>{{ event.titulo }}</span>@if (event.detalle) {<small>{{ event.detalle }}</small>}<time>{{ formatDate(event.fecha) }} · {{ formatTime(event) }}</time>} @else if (step.current) {<span>Estado actual</span><small>El reclamo está en gestión.</small>} @else {<span>Pendiente</span>}</div>
               </li>
             }
           </ol>
@@ -51,14 +51,15 @@ export class ReclamoSeguimientoComponent {
       const estado = this.estadoFromEvent(event);
       if (estado) eventByState.set(estado, event);
     }
-    const current = [...eventByState.keys()].at(-1) ?? RECLAMO_ESTADOS.RECIBIDOS;
+    // En este módulo todos los reclamos ya fueron recibidos y están en curso:
+    // ambos pasos se muestran completos. Solo "Finalizado" depende del historial.
+    const finalizado = eventByState.has(RECLAMO_ESTADOS.FINALIZADO);
+    const current = finalizado ? RECLAMO_ESTADOS.FINALIZADO : RECLAMO_ESTADOS.EN_CURSO;
     return [RECLAMO_ESTADOS.RECIBIDOS, RECLAMO_ESTADOS.EN_CURSO, RECLAMO_ESTADOS.FINALIZADO].map(estado => ({
       estado,
       label: RECLAMO_ESTADO_ETIQUETAS[estado],
       event: eventByState.get(estado),
-      // El paso inicial representa una recepción ya confirmada, incluso cuando
-      // también es el estado actual: debe conservar su check de progreso.
-      completed: eventByState.has(estado),
+      completed: estado === RECLAMO_ESTADOS.FINALIZADO ? finalizado : true,
       current: current === estado,
     }));
   });

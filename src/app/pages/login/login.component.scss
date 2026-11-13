@@ -1047,3 +1047,70 @@
   }
   .form-panel { padding-top:clamp(26px,7vw,52px); }
 }
+
+/* Hero móvil unificado con /reclamos */
+@media (max-width:767px) {
+  .login-page { background:#f5f7fa; }
+  .login-page:before { display:none; }
+  .login-page .mobile-hero {
+    position:relative;
+    display:block;
+    height:auto;
+    min-height:230px;
+    overflow:hidden;
+    padding:26px 20px 84px;
+    background:radial-gradient(circle at 21% 0,#ffec70 0,transparent 30%),linear-gradient(135deg,#ffe238,#ffca00 62%);
+  }
+  .login-page .mobile-hero::before {
+    content:"";
+    position:absolute;
+    z-index:0;
+    right:-30%;
+    bottom:-60px;
+    left:-30%;
+    height:130px;
+    border-radius:50%;
+    background:#ffeb85;
+    opacity:.55;
+  }
+  .login-page .mobile-hero::after {
+    content:"";
+    position:absolute;
+    z-index:1;
+    right:-25%;
+    bottom:-78px;
+    left:-25%;
+    height:120px;
+    border-radius:50%;
+    background:#f5f7fa;
+  }
+  .login-page .mobile-hero > div { position:relative; z-index:2; max-width:64%; }
+  .login-page .mobile-hero h1 {
+    margin:0 0 6px;
+    color:#071538;
+    font-size:clamp(2.4rem,11.5vw,3.25rem);
+    font-weight:900;
+    line-height:1;
+    letter-spacing:-.05em;
+  }
+  .login-page .mobile-hero .hero-maser { color:#fff; }
+  .login-page .mobile-hero .hero-link { color:#071538; }
+  .login-page .mobile-hero p {
+    margin:0;
+    color:#071538;
+    font-size:clamp(1rem,4.6vw,1.25rem);
+    font-weight:600;
+    line-height:1.2;
+    letter-spacing:-.025em;
+  }
+  .login-page .mobile-hero > img {
+    position:absolute;
+    z-index:1;
+    right:-4px;
+    bottom:46px;
+    width:min(40vw,170px);
+    filter:drop-shadow(0 12px 14px rgb(94 74 0 / 18%));
+    transform:rotate(4deg);
+  }
+  .login-page .login-shell { margin:-46px auto 0; }
+}

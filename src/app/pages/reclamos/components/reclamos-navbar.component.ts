@@ -27,12 +27,13 @@ import { AvisosService } from '../../../core/Services/avisos.service';
         </button>
       </div>
     </header>
+    <!-- NAVBAR MÓVIL (comentado, no eliminado)
     <header class="mobile-navbar" [class.minimal]="minimalMobile()">
       <button type="button" class="mobile-back" [class.hidden]="!showBack()" (click)="back.emit()" aria-label="Volver"><lucide-icon [img]="backIcon" [size]="24" [strokeWidth]="2.4" /></button>
       <a class="mobile-brand" routerLink="/reclamos" aria-label="Ir al inicio"><span class="maser-wordmark" aria-label="Maser LINK"><b>Maser</b><strong>LINK</strong></span></a>
       <h1>{{ title() }}</h1>
       <button type="button" class="mobile-logout" aria-label="Cerrar sesión" (click)="logoutRequested.emit()"><lucide-icon [img]="logoutIcon" [size]="20" [strokeWidth]="2.2" /></button>
-    </header>
+    </header> -->
   `,
   styleUrl: './reclamos-navbar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

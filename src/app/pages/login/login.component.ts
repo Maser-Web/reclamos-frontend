@@ -11,22 +11,13 @@ import { NotificationService } from '../../core/Services/notification.service';
     <main class="login-page">
       <header class="login-header">
         <div class="header-brand">
-          <span class="maser-wordmark" aria-label="Maser LINK"><b>Maser</b><strong>LINK</strong></span>
+          <span class="maser-wordmark" aria-label="Maser LINK"><b>Maser</b><strong>Link</strong></span>
         </div>
       </header>
 
       <section class="mobile-hero" aria-label="Bienvenida">
-        <div class="mobile-copy">
-          <div class="maser-lockup maser-lockup--hero" aria-label="Maser LINK, Gestión y resolución de reclamos">
-            <h1><span>Maser</span> LINK</h1>
-            <p>Gestión y resolución<br />de reclamos</p>
-          </div>
-        </div>
-        <div class="claim-illustration mobile-illustration" aria-hidden="true">
-          <i class="orb orb-one"></i><i class="orb orb-two"></i><i class="spark spark-one"></i><i class="spark spark-two"></i>
-          <div class="paper"><b></b><span></span><span></span><span></span><span></span></div>
-          <div class="shield"><svg viewBox="0 0 48 48"><path d="m14 24 7 7 14-16"/></svg></div>
-        </div>
+        <div><h1><span class="hero-maser">Maser</span><span class="hero-link">Link</span></h1><p>Gestión y resolución<br />de reclamos</p></div>
+        <img src="assets/reclamo-note.svg" alt="" aria-hidden="true" />
       </section>
 
       <section class="login-shell">
@@ -56,7 +47,6 @@ import { NotificationService } from '../../core/Services/notification.service';
               </button>
             </div>
 
-            <a class="forgot-password" href="#" (click)="$event.preventDefault()">¿Olvidaste tu contraseña?</a>
             <button class="login-button" type="submit" [disabled]="form.invalid || loading()">
               <span>{{ loading() ? 'Ingresando...' : 'Iniciar sesión' }}</span>
               @if (!loading()) { <svg viewBox="0 0 32 24" aria-hidden="true"><path d="M2 12h25M18 2l10 10-10 10"/></svg> }

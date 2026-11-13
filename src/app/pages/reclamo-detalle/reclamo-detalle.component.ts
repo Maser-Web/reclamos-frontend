@@ -19,11 +19,12 @@ import { RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/
         </div>
 
         <section class="mobile-claim-hero">
+          <!-- NAVBAR MÓVIL DEL DETALLE (comentado, no eliminado)
           <header class="detail-mobile-nav">
             <button type="button" aria-label="Volver a reclamos" (click)="back()"><app-icon name="chevron-left" [size]="28" /></button>
             <span class="detail-nav-spacer" aria-hidden="true"></span>
             <button type="button" aria-label="Cerrar sesión" (click)="logout()"><app-icon name="log-out" [size]="22" /></button>
-          </header>
+          </header> -->
           <div class="mobile-hero-copy"><h1><span class="hero-maser">Maser</span><span class="hero-link">Link</span></h1><p>Gestión y resolución<br />de reclamos</p></div>
           <img src="assets/reclamo-note.svg" alt="" aria-hidden="true" />
         </section>
@@ -54,15 +55,17 @@ import { RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/
           <div class="desktop-actions">
             @if (r.estado !== estados.FINALIZADO) {<app-button label="Finalizar reclamo" icon="check" variant="success" (click)="goClose()" />} @else {<p class="notice">Este reclamo ya está finalizado.</p>}
             <app-button label="Ver seguimiento" icon="clipboard-list" variant="secondary" (click)="goTracking()" />
-            <app-button label="Derivar reclamo" icon="refresh" variant="secondary" (click)="goDerive()" />
+            @if (r.estado !== estados.FINALIZADO) {
+              <app-button label="Derivar reclamo" icon="refresh" variant="secondary" (click)="goDerive()" />
+              <app-button label="Asignar prioridad" icon="flag" variant="secondary" (click)="openPriorityModal(r.prioridad)" />
+            }
           </div>
         </article>
 
-        <div class="desktop-priority"><app-button label="Asignar prioridad" icon="flag" variant="secondary" (click)="openPriorityModal(r.prioridad)" /></div>
         <div class="mobile-actions">
           @if (r.estado !== estados.FINALIZADO) {<app-button label="Finalizar reclamo" icon="check" variant="success" (click)="goClose()" />} @else {<p class="notice">Este reclamo ya está finalizado.</p>}
           <app-button label="Ver seguimiento" icon="clipboard-list" variant="secondary" (click)="goTracking()" />
-          <app-button label="Derivar reclamo" icon="refresh" variant="secondary" (click)="goDerive()" />
+          @if (r.estado !== estados.FINALIZADO) {<app-button label="Derivar reclamo" icon="refresh" variant="secondary" (click)="goDerive()" />}
         </div>
       </section>
     } @else {
