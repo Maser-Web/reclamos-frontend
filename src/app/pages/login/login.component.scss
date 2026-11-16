@@ -1058,7 +1058,7 @@
     height:auto;
     min-height:230px;
     overflow:hidden;
-    padding:26px 20px 84px;
+    padding:calc(26px + env(safe-area-inset-top)) 20px 84px;
     background:radial-gradient(circle at 21% 0,#ffec70 0,transparent 30%),linear-gradient(135deg,#ffe238,#ffca00 62%);
   }
   .login-page .mobile-hero::before {

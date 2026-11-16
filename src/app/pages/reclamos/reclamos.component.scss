@@ -157,7 +157,7 @@
 }
 .summary {
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:repeat(3,minmax(0,1fr));
   gap:11px;
   margin-bottom:25px
 }
@@ -549,7 +549,7 @@
   }
   .mobile-hero {
     min-height:230px;
-    padding:26px 20px 84px;
+    padding:calc(26px + env(safe-area-inset-top)) 20px 84px;
     background:radial-gradient(circle at 21% 0,#ffec70 0,transparent 30%),linear-gradient(135deg,#ffe238,#ffca00 62%);
     clip-path:none
   }

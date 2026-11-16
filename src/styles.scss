@@ -149,3 +149,20 @@ input:focus, select:focus, textarea:focus { border-color: #c7a600; box-shadow: 0
 @include reduced-motion {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* iOS: pinta de amarillo la zona del notch / barra de estado (solo móvil) */
+@media (max-width: 767px) {
+  html { background: #ffe238; }
+  body { background: var(--color-background); }
+  body::before {
+    content: "";
+    position: fixed;
+    z-index: 50;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: env(safe-area-inset-top);
+    background: #ffe238;
+    pointer-events: none;
+  }
+}
