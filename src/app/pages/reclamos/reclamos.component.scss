@@ -255,7 +255,7 @@
 }
 .headings,.claim {
   display:grid;
-  grid-template-columns:7% 25% 17% 12% 11% 15% 13%
+  grid-template-columns:6% 21% 15% 13% 11% 10% 13% 11%
 }
 .headings {
   padding:0 19px 10px;
@@ -499,7 +499,7 @@
     border-radius:11px
   }
   .claim,.headings {
-    grid-template-columns:8% 25% 15% 13% 11% 16% 12%
+    grid-template-columns:7% 21% 14% 13% 11% 10% 14% 10%
   }
 }
 @media(max-width:767px) {
@@ -720,7 +720,7 @@
   .rail {
     width:7px
   }
-  .claim>.number,.subject,.client,.claim>.state,.priority,.claim>time,.actions {
+  .claim>.number,.subject,.client,.vendor,.claim>.state,.priority,.claim>time,.actions {
     display:none
   }
   .m-top {
@@ -854,4 +854,11 @@
   .m-actions .responsible,
   .m-actions .attachments { display:flex; align-items:center; gap:4px; }
   .m-actions .attachments { margin-left:4px; }
+}
+
+.vendor { font-size:12px; font-weight:700; color:#34435c; overflow-wrap:anywhere; padding-right:8px }
+@media(max-width:767px) {
+  .m-body .m-head { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .m-body .m-head strong { font-size:.95rem; }
+  .m-body .vendor-name { display:block; text-align:right; color:#8a96aa; font-size:.7rem; font-weight:600; min-width:0; overflow-wrap:anywhere; }
 }

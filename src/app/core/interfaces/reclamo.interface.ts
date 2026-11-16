@@ -49,6 +49,8 @@ export interface ReclamoBackend {
   recDerivo: string | null;
   /** Nombre del usuario derivado, disponible cuando el backend lo incluye. */
   usuNombreDerivado?: string | null;
+  /** Nombre del vendedor asociado al reclamo devuelto por el backend. */
+  venNombre?: string | null;
   recFechaD: string | null;
   recHoraD: string | null;
   recFechaF: string | null;

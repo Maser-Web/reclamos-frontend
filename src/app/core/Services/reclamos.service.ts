@@ -165,6 +165,7 @@ export class ReclamosService {
       areaId: null,
       responsableId: reclamo.recDerivo,
       responsableNombre: reclamo.usuNombreDerivado ?? null,
+      vendedorNombre: reclamo.venNombre ?? null,
       fechaCreacion,
       horaCreacion: reclamo.recHora,
       fechaDerivacion: reclamo.recFechaD,
