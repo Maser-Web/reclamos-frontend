@@ -7,9 +7,6 @@ import { AuthToken, LoginRequest } from '../interfaces/auth.interface';
 
 const SESSION_STORAGE_KEY = 'coronel-reclamos.auth-session';
 
-const ROL_STORAGE_KEY = 'rol';
-const ROLES_GESTION_RECLAMOS: readonly number[] = [1, 2, 3];
-
 type StoredSession = AuthToken;
 
 @Injectable({ providedIn: 'root' })
@@ -21,13 +18,13 @@ export class AuthService {
   readonly usuarioId = computed(() => this.session()?.usuarioId ?? null);
   readonly usuarioCodigo = computed(() => this.session()?.usuarioId ?? null);
   readonly usuarioNombre = computed(() => this.session()?.usuNombre?.trim() || null);
-  readonly usuarioPerfil = computed<number | null>(() => {
-    const perfil = this.session()?.usuPerfil ?? this.session()?.usu_perfil;
-    const value = Number(perfil);
+  readonly usuAdminReclamo = computed<number | null>(() => {
+    const value = Number(this.session()?.usuAdminReclamo);
     return Number.isInteger(value) ? value : null;
   });
-  readonly puedeGestionarReclamos = computed(() => ROLES_GESTION_RECLAMOS.includes(this.usuarioPerfil() ?? 0));
-  readonly esOperador = computed(() => this.usuarioPerfil() === 4);
+  readonly esAdministradorReclamos = computed(() => this.usuAdminReclamo() === 1);
+  readonly puedeGestionarReclamos = computed(() => this.esAdministradorReclamos());
+  readonly esOperador = computed(() => !this.esAdministradorReclamos());
 
   login(credentials: LoginRequest): Observable<AuthToken> {
     const validationError = this.validateCredentials(credentials);
@@ -40,7 +37,6 @@ export class AuthService {
       map(response => this.unwrap(response)),
       tap(token => {
         this.persistSession(token);
-        this.persistRol(token.usuPerfil ?? token.usu_perfil);
       }),
     );
   }
@@ -55,6 +51,7 @@ export class AuthService {
         ...token,
         usuarioId: session.usuarioId,
         usuNombre: token.usuNombre?.trim() || session.usuNombre,
+        usuAdminReclamo: token.usuAdminReclamo ?? session.usuAdminReclamo,
       })),
     );
   }
@@ -62,20 +59,11 @@ export class AuthService {
   logout(): void {
     this.session.set(null);
     localStorage.removeItem(SESSION_STORAGE_KEY);
-    localStorage.removeItem(ROL_STORAGE_KEY);
   }
 
-  /** Roles (usu_perfil) autorizados a adherir clientes a un reclamo. */
+  /** Solo usuarios con administración de reclamos pueden modificar reclamos. */
   puedeAdherirReclamo(): boolean {
     return this.puedeGestionarReclamos();
-  }
-
-  private persistRol(perfil: number | string | null | undefined): void {
-    if (perfil === null || perfil === undefined) {
-      localStorage.removeItem(ROL_STORAGE_KEY);
-      return;
-    }
-    localStorage.setItem(ROL_STORAGE_KEY, String(perfil));
   }
 
   private unwrap<T>(response: ApiResponse<T>): T {

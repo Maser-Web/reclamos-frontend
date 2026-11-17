@@ -38,30 +38,42 @@ describe('AuthService', () => {
     http.expectNone(request => request.method === 'GET' && request.url === 'http://localhost:7500/auth/23');
   });
 
-  it('stores the usu_perfil returned at login in localStorage as "rol" and clears it on logout', () => {
+  it('uses usuAdminReclamo, independently of usuPerfil, to authorize claim management', () => {
     service.login({ usuario: 'maria', password: 'secreta' }).subscribe();
     http.expectOne('http://localhost:7500/auth/login').flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: {
-      accessToken: 'token', expiresAt: '2030-01-01T00:00:00.000Z', sessionId: '23', usuarioId: 42, usuNombre: 'María González', usu_perfil: 2,
+      accessToken: 'token', expiresAt: '2030-01-01T00:00:00.000Z', sessionId: '23', usuarioId: 42, usuNombre: 'María González', usuPerfil: 4, usuAdminReclamo: 1,
     } });
 
-    expect(localStorage.getItem('rol')).toBe('2');
-    expect(service.usuarioPerfil()).toBe(2);
+    expect(service.usuAdminReclamo()).toBe(1);
+    expect(service.esAdministradorReclamos()).toBeTrue();
     expect(service.puedeGestionarReclamos()).toBeTrue();
     expect(service.esOperador()).toBeFalse();
     service.logout();
-    expect(localStorage.getItem('rol')).toBeNull();
+    expect(localStorage.getItem('coronel-reclamos.auth-session')).toBeNull();
+  });
+
+  it('treats any usuAdminReclamo value other than 1 as operator', () => {
+    service.login({ usuario: 'maria', password: 'secreta' }).subscribe();
+    http.expectOne('http://localhost:7500/auth/login').flush({ codigo: 200, mensaje: 'OK', data: {
+      accessToken: 'token', expiresAt: '2030-01-01T00:00:00.000Z', sessionId: '23', usuarioId: 42, usuNombre: 'María González', usuPerfil: 1, usuAdminReclamo: 0,
+    } });
+
+    expect(service.esAdministradorReclamos()).toBeFalse();
+    expect(service.esOperador()).toBeTrue();
+    expect(service.puedeGestionarReclamos()).toBeFalse();
   });
 
   it('renews the session without replacing the authenticated user or name', () => {
     service.login({ usuario: 'maria', password: 'secreta' }).subscribe();
     http.expectOne('http://localhost:7500/auth/login').flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: {
-      accessToken: 'token', expiresAt: '2030-01-01T00:00:00.000Z', sessionId: '23', usuarioId: 42, usuNombre: 'María González',
+      accessToken: 'token', expiresAt: '2030-01-01T00:00:00.000Z', sessionId: '23', usuarioId: 42, usuNombre: 'María González', usuAdminReclamo: 1,
     } });
 
     service.renewSession().subscribe(token => {
       expect(token.accessToken).toBe('renewed-token');
       expect(service.usuarioCodigo()).toBe(42);
       expect(service.usuarioNombre()).toBe('María González');
+      expect(service.esAdministradorReclamos()).toBeTrue();
     });
 
     const renew = http.expectOne('http://localhost:7500/auth/23');

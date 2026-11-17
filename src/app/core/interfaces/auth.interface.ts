@@ -11,5 +11,6 @@ export interface AuthToken {
   usuNombre: string | null;
   usuPerfil?: number | string | null;
   usu_perfil?: number | string | null;
+  usuAdminReclamo?: number | string | null;
 }
 

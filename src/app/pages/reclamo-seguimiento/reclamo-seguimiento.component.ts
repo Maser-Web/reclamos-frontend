@@ -4,7 +4,6 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { AppButtonComponent, AppHeaderComponent, AppIconComponent } from '../../core/components/ui';
 import { EstadoReclamo, RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/reclamo-estados';
 import { ReclamosService } from '../../core/Services/reclamos.service';
-import { AuthService } from '../../core/Services/auth.service';
 import { ReclamoVista, Seguimiento } from '../../core/interfaces/models';
 
 type StepperItem = { estado: EstadoReclamo; label: string; event?: Seguimiento; completed: boolean; current: boolean };
@@ -19,7 +18,7 @@ type StepperItem = { estado: EstadoReclamo; label: string; event?: Seguimiento; 
       @if (loading()) {
         <section class="tracking-card loading" role="status">Cargando historial…</section>
       } @else if (notFound()) {
-        <section class="tracking-card" role="alert">{{ auth.esOperador() ? 'El reclamo no existe o no fue derivado a tu usuario.' : 'El reclamo no existe.' }}</section>
+        <section class="tracking-card" role="alert">Reclamo no disponible.</section>
       } @else {
         @if (error()) {<p class="tracking-error" role="alert">No pudimos cargar los movimientos; se muestra el estado inicial del reclamo.</p>}
         <section class="tracking-card" aria-label="Progreso del reclamo">
@@ -44,7 +43,6 @@ export class ReclamoSeguimientoComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly reclamosService = inject(ReclamosService);
-  readonly auth = inject(AuthService);
   readonly historial = signal<Seguimiento[]>([]);
   readonly loading = signal(true);
   readonly error = signal(false);

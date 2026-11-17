@@ -73,7 +73,7 @@ import { RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/
         </div>
       </section>
     } @else {
-      <section class="page"><p class="notice">{{ loadError() ? (auth.esOperador() ? 'El reclamo no existe o no fue derivado a tu usuario.' : 'El reclamo no existe.') : 'Cargando reclamo...' }}</p></section>
+      <section class="page"><p class="notice">{{ loadError() ? 'Reclamo no disponible.' : 'Cargando reclamo...' }}</p></section>
     }
 
     @if (priorityModalOpen()) {
