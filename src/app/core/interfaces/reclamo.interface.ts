@@ -23,7 +23,6 @@ export interface ReclamosPaginadosBackend {
 }
 
 export interface ActualizarEstadoRequest {
-  usuCodigo: string;
   comentario?: string;
 }
 

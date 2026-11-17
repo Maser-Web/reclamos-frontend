@@ -1,8 +1,11 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from './auth.service';
+import { authInterceptor } from '../interceptors/auth.interceptor';
+import { NotificationService } from './notification.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -10,7 +13,7 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection(), provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection(), provideHttpClient(withInterceptors([authInterceptor])), provideHttpClientTesting(), { provide: Router, useValue: { url: '/login', navigate: () => Promise.resolve(true) } }, { provide: NotificationService, useValue: { error: () => Promise.resolve() } }] });
     service = TestBed.inject(AuthService);
     http = TestBed.inject(HttpTestingController);
   });
@@ -27,6 +30,7 @@ describe('AuthService', () => {
 
     const login = http.expectOne('http://localhost:7500/auth/login');
     expect(login.request.method).toBe('POST');
+    expect(login.request.headers.has('Authorization')).toBeFalse();
     expect(login.request.body).toEqual({ usuario: 'maria', password: 'secreta' });
     login.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: {
       accessToken: 'token', expiresAt: '2030-01-01T00:00:00.000Z', sessionId: '23', usuarioId: 42, usuNombre: 'María González',
@@ -41,6 +45,9 @@ describe('AuthService', () => {
     } });
 
     expect(localStorage.getItem('rol')).toBe('2');
+    expect(service.usuarioPerfil()).toBe(2);
+    expect(service.puedeGestionarReclamos()).toBeTrue();
+    expect(service.esOperador()).toBeFalse();
     service.logout();
     expect(localStorage.getItem('rol')).toBeNull();
   });

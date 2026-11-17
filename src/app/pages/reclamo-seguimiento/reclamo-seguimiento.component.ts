@@ -4,6 +4,7 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { AppButtonComponent, AppHeaderComponent, AppIconComponent } from '../../core/components/ui';
 import { EstadoReclamo, RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/reclamo-estados';
 import { ReclamosService } from '../../core/Services/reclamos.service';
+import { AuthService } from '../../core/Services/auth.service';
 import { ReclamoVista, Seguimiento } from '../../core/interfaces/models';
 
 type StepperItem = { estado: EstadoReclamo; label: string; event?: Seguimiento; completed: boolean; current: boolean };
@@ -17,6 +18,8 @@ type StepperItem = { estado: EstadoReclamo; label: string; event?: Seguimiento; 
       <header class="tracking-header"><p>HISTORIAL DEL RECLAMO</p><h2>Seguimiento</h2><span>Consultá cada cambio de estado registrado para este reclamo.</span></header>
       @if (loading()) {
         <section class="tracking-card loading" role="status">Cargando historial…</section>
+      } @else if (notFound()) {
+        <section class="tracking-card" role="alert">{{ auth.esOperador() ? 'El reclamo no existe o no fue derivado a tu usuario.' : 'El reclamo no existe.' }}</section>
       } @else {
         @if (error()) {<p class="tracking-error" role="alert">No pudimos cargar los movimientos; se muestra el estado inicial del reclamo.</p>}
         <section class="tracking-card" aria-label="Progreso del reclamo">
@@ -41,9 +44,11 @@ export class ReclamoSeguimientoComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly reclamosService = inject(ReclamosService);
+  readonly auth = inject(AuthService);
   readonly historial = signal<Seguimiento[]>([]);
   readonly loading = signal(true);
   readonly error = signal(false);
+  readonly notFound = signal(false);
   readonly stepper = computed<StepperItem[]>(() => {
     const events = [...this.historial()].sort((a, b) => this.dateValue(a.fecha) - this.dateValue(b.fecha));
     const eventByState = new Map<EstadoReclamo, Seguimiento>();
@@ -74,6 +79,11 @@ export class ReclamoSeguimientoComponent {
       })),
     }).subscribe({
       next: ({ reclamo, historial }) => {
+        if (!reclamo) {
+          this.notFound.set(true);
+          this.loading.set(false);
+          return;
+        }
         const movimientos = reclamo
           ? historial.length
             ? [this.receivedEvent(reclamo), ...historial.filter(event => event.tipo !== 'creado')]

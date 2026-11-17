@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { AuthService } from '../../core/Services/auth.service';
 import { RECLAMO_ESTADOS } from '../../core/constants/reclamo-estados';
 import { ReclamosService } from '../../core/Services/reclamos.service';
 import { MotivosReclamosService } from '../../core/Services/motivos-reclamos.service';
@@ -21,7 +20,6 @@ export class ReclamoCerrarComponent {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(ReclamosService);
   private readonly motivosService = inject(MotivosReclamosService);
-  private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);
@@ -50,14 +48,8 @@ export class ReclamoCerrarComponent {
 
   submit(): void {
     if (this.form.invalid) return;
-    const usuCodigo = this.auth.usuarioCodigo();
-    if (usuCodigo === null) {
-      void this.notifications.error('Sesión no disponible', 'Volvé a iniciar sesión para finalizar el reclamo.');
-      return;
-    }
     this.saving.set(true);
     this.service.actualizarEstado(this.id(), RECLAMO_ESTADOS.FINALIZADO, {
-      usuCodigo: String(usuCodigo),
       comentario: this.form.controls.comentario.value || undefined,
     }).subscribe({
       next: () => {

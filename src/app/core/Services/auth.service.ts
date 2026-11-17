@@ -1,6 +1,6 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { catchError, map, Observable, tap, throwError } from 'rxjs';
+import { map, Observable, tap, throwError } from 'rxjs';
 import { BACKEND_ENDPOINTS } from '../endpoints/backend.endpoints';
 import { ApiResponse } from '../interfaces/api-response.interface';
 import { AuthToken, LoginRequest } from '../interfaces/auth.interface';
@@ -8,7 +8,7 @@ import { AuthToken, LoginRequest } from '../interfaces/auth.interface';
 const SESSION_STORAGE_KEY = 'coronel-reclamos.auth-session';
 
 const ROL_STORAGE_KEY = 'rol';
-const ROLES_ADHERIR_RECLAMO: readonly number[] = [1, 2, 3];
+const ROLES_GESTION_RECLAMOS: readonly number[] = [1, 2, 3];
 
 type StoredSession = AuthToken;
 
@@ -21,6 +21,13 @@ export class AuthService {
   readonly usuarioId = computed(() => this.session()?.usuarioId ?? null);
   readonly usuarioCodigo = computed(() => this.session()?.usuarioId ?? null);
   readonly usuarioNombre = computed(() => this.session()?.usuNombre?.trim() || null);
+  readonly usuarioPerfil = computed<number | null>(() => {
+    const perfil = this.session()?.usuPerfil ?? this.session()?.usu_perfil;
+    const value = Number(perfil);
+    return Number.isInteger(value) ? value : null;
+  });
+  readonly puedeGestionarReclamos = computed(() => ROLES_GESTION_RECLAMOS.includes(this.usuarioPerfil() ?? 0));
+  readonly esOperador = computed(() => this.usuarioPerfil() === 4);
 
   login(credentials: LoginRequest): Observable<AuthToken> {
     const validationError = this.validateCredentials(credentials);
@@ -42,16 +49,13 @@ export class AuthService {
     const session = this.session();
     if (!session) return throwError(() => new Error('No hay una sesión activa'));
 
-    return this.http.put<ApiResponse<AuthToken>>(BACKEND_ENDPOINTS.auth.session(session.sessionId), undefined, {
-      headers: this.bearerHeaders(session.accessToken),
-    }).pipe(
+    return this.http.put<ApiResponse<AuthToken>>(BACKEND_ENDPOINTS.auth.session(session.sessionId), undefined).pipe(
       map(response => this.unwrap(response)),
       tap(token => this.persistSession({
         ...token,
         usuarioId: session.usuarioId,
         usuNombre: token.usuNombre?.trim() || session.usuNombre,
       })),
-      catchError(error => this.handleUnauthorized(error)),
     );
   }
 
@@ -63,12 +67,7 @@ export class AuthService {
 
   /** Roles (usu_perfil) autorizados a adherir clientes a un reclamo. */
   puedeAdherirReclamo(): boolean {
-    try {
-      const rol = Number(localStorage.getItem(ROL_STORAGE_KEY));
-      return ROLES_ADHERIR_RECLAMO.includes(rol);
-    } catch {
-      return false;
-    }
+    return this.puedeGestionarReclamos();
   }
 
   private persistRol(perfil: number | string | null | undefined): void {
@@ -79,23 +78,9 @@ export class AuthService {
     localStorage.setItem(ROL_STORAGE_KEY, String(perfil));
   }
 
-  private bearerHeaders(accessToken: string | undefined): HttpHeaders {
-    return new HttpHeaders(accessToken ? { Authorization: `Bearer ${accessToken}` } : {});
-  }
-
   private unwrap<T>(response: ApiResponse<T>): T {
     if (response.data === null) throw new Error(response.mensaje);
     return response.data;
-  }
-
-  private handleUnauthorized(error: unknown): Observable<never> {
-    if (this.statusOf(error) === 401) this.logout();
-    return throwError(() => error);
-  }
-
-  private statusOf(error: unknown): number | undefined {
-    return typeof error === 'object' && error !== null && 'status' in error &&
-      typeof error.status === 'number' ? error.status : undefined;
   }
 
   private validateCredentials(credentials: LoginRequest): string | null {

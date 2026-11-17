@@ -1,6 +1,6 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { catchError, map, Observable, throwError } from 'rxjs';
+import { map, Observable, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { BACKEND_ENDPOINTS } from '../endpoints/backend.endpoints';
 import { ApiResponse } from '../interfaces/api-response.interface';
@@ -36,8 +36,18 @@ export class ReclamosService {
     );
   }
 
+  /** Página global de reclamos, disponible solo para perfiles 1, 2 y 3. */
+  listarTodos(query: ReclamosPaginationQuery = {}): Observable<ReclamosPaginados> {
+    const params = this.paginationParams(query);
+    return this.http.get<ApiResponse<ReclamosPaginadosBackend | ReclamoBackend[]>>(BACKEND_ENDPOINTS.reclamos.base, { params }).pipe(
+      map(response => this.toPage(this.unwrap(response), query)),
+    );
+  }
+
   detail(id: string): Observable<ReclamoVista> {
     this.assertPositiveInteger(id, 'El id del reclamo debe ser un entero positivo');
+    const accessToken = this.auth.accessToken();
+    if (!accessToken) return throwError(() => new Error('No hay una sesiÃ³n activa'));
     return this.http.get<ApiResponse<ReclamoBackend>>(BACKEND_ENDPOINTS.reclamos.byId(id)).pipe(
       map(response => this.toVista(this.unwrap(response))),
     );
@@ -56,24 +66,8 @@ export class ReclamosService {
     if (!accessToken) return throwError(() => new Error('No hay una sesión activa'));
     const params = this.paginationParams(query);
     return this.http.get<ApiResponse<ReclamosPaginadosBackend | ReclamoBackend[]>>(BACKEND_ENDPOINTS.reclamos.misReclamos, {
-      headers: new HttpHeaders({ Authorization: `Bearer ${accessToken}` }),
       params,
-    }).pipe(map(response => {
-      const page = this.unwrap(response);
-      if (Array.isArray(page)) {
-        return this.paginate(page.map(reclamo => this.toVista(reclamo)), query);
-      }
-      return { ...page, items: page.items.map(reclamo => this.toVista(reclamo)) };
-    }), catchError(error => {
-      // El backend local anterior no registra /mis-reclamos antes de /:id y
-      // responde 400 al interpretar "mis-reclamos" como un identificador.
-      // Conservamos el endpoint autenticado como primera opción y usamos el
-      // listado por usuario únicamente para esa implementación compatible.
-      if (this.statusOf(error) !== 400) return throwError(() => error);
-      const usuarioId = this.auth.usuarioCodigo();
-      if (!usuarioId) return throwError(() => error);
-      return this.byUsuario(String(usuarioId)).pipe(map(items => this.paginate(items, query)));
-    }));
+    }).pipe(map(response => this.toPage(this.unwrap(response), query)));
   }
 
   historial(id: string): Observable<Seguimiento[]> {
@@ -89,7 +83,6 @@ export class ReclamosService {
     payload: ActualizarEstadoRequest,
   ): Observable<void> {
     this.assertPositiveInteger(id, 'El id del reclamo debe ser un entero positivo');
-    this.assertPositiveInteger(payload.usuCodigo, 'El código de usuario debe ser un entero positivo');
     const estadoNormalizado = estado.toUpperCase() as EstadoReclamo;
     if (!RECLAMO_ESTADOS_LISTA.includes(estadoNormalizado)) {
       throw new Error('El estado solicitado no es válido');
@@ -134,9 +127,9 @@ export class ReclamosService {
     };
   }
 
-  private statusOf(error: unknown): number | undefined {
-    return typeof error === 'object' && error !== null && 'status' in error &&
-      typeof error.status === 'number' ? error.status : undefined;
+  private toPage(page: ReclamosPaginadosBackend | ReclamoBackend[], query: ReclamosPaginationQuery): ReclamosPaginados {
+    if (Array.isArray(page)) return this.paginate(page.map(reclamo => this.toVista(reclamo)), query);
+    return { ...page, items: page.items.map(reclamo => this.toVista(reclamo)) };
   }
 
   private unwrap<T>(response: ApiResponse<T>): T {

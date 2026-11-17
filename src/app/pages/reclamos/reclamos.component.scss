@@ -157,9 +157,13 @@
 }
 .summary {
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:repeat(4,minmax(0,1fr));
   gap:11px;
   margin-bottom:25px
+}
+
+.claims-page.read-only .page-title > div > button {
+  display: none;
 }
 .summary article {
   min-height:108px;

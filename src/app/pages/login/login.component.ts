@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/Services/auth.service';
 import { NotificationService } from '../../core/Services/notification.service';
 
@@ -93,6 +93,7 @@ export class LoginComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly notifications = inject(NotificationService);
   showPassword = false;
   readonly loading = signal(false);
@@ -110,7 +111,8 @@ export class LoginComponent {
     this.loading.set(true);
     this.auth.login(this.form.getRawValue()).subscribe({
       next: () => void this.notifications.success('¡Bienvenido!', 'El acceso fue validado correctamente.').then(() => {
-        void this.router.navigateByUrl('/reclamos');
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        void this.router.navigateByUrl(returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/reclamos');
       }),
       error: error => {
         this.loading.set(false);

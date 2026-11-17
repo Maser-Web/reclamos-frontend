@@ -1,4 +1,5 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -6,6 +7,8 @@ import { ReclamoBackend } from '../interfaces/reclamo.interface';
 import { RECLAMO_ESTADOS } from '../constants/reclamo-estados';
 import { ReclamosService } from './reclamos.service';
 import { AuthService } from './auth.service';
+import { authInterceptor } from '../interceptors/auth.interceptor';
+import { NotificationService } from './notification.service';
 
 const reclamoBackend: ReclamoBackend = {
   recCodigo: '123', recFecha: '2026-10-01T10:00:00.000Z', recHora: null,
@@ -21,7 +24,7 @@ describe('ReclamosService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection(), provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: { accessToken: signal('token-de-prueba'), usuarioCodigo: signal(42) } }] });
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection(), provideHttpClient(withInterceptors([authInterceptor])), provideHttpClientTesting(), { provide: AuthService, useValue: { accessToken: signal('token-de-prueba'), usuarioCodigo: signal(42) } }, { provide: Router, useValue: { url: '/reclamos', navigate: () => Promise.resolve(true) } }, { provide: NotificationService, useValue: { error: () => Promise.resolve() } }] });
     service = TestBed.inject(ReclamosService);
     http = TestBed.inject(HttpTestingController);
   });
@@ -42,12 +45,33 @@ describe('ReclamosService', () => {
     request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: [reclamoBackend] });
   });
 
-  it('sends FINALIZADO and the user code in the state update request', () => {
-    service.actualizarEstado('123', RECLAMO_ESTADOS.FINALIZADO, { usuCodigo: '42', comentario: 'Resuelto' }).subscribe();
+  it('requests the global paginated claims page for management profiles', () => {
+    service.listarTodos({ limit: '10', offset: '20' }).subscribe(page => {
+      expect(page.items).toEqual([jasmine.objectContaining({ id: '123' })]);
+      expect(page).toEqual(jasmine.objectContaining({ limit: 10, offset: 20, total: 31, hasNext: true }));
+    });
+
+    const request = http.expectOne(request => request.url === 'http://localhost:7500/reclamos');
+    expect(request.request.params.get('limit')).toBe('10');
+    expect(request.request.params.get('offset')).toBe('20');
+    request.flush({ codigo: 200, mensaje: 'OK', data: { items: [reclamoBackend], limit: 10, offset: 20, total: 31, hasNext: true } });
+  });
+
+  it('sends a bearer token when requesting a claim detail', () => {
+    service.detail('19').subscribe(reclamo => expect(reclamo.id).toBe('123'));
+
+    const request = http.expectOne('http://localhost:7500/reclamos/19');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token-de-prueba');
+    request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: reclamoBackend });
+  });
+
+  it('sends FINALIZADO and only the optional comment in the state update request', () => {
+    service.actualizarEstado('123', RECLAMO_ESTADOS.FINALIZADO, { comentario: 'Resuelto' }).subscribe();
 
     const request = http.expectOne('http://localhost:7500/reclamos/123/estado/FINALIZADO');
     expect(request.request.method).toBe('PATCH');
-    expect(request.request.body).toEqual({ usuCodigo: '42', comentario: 'Resuelto' });
+    expect(request.request.body).toEqual({ comentario: 'Resuelto' });
     request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: null });
   });
 
@@ -95,17 +119,14 @@ describe('ReclamosService', () => {
     request.flush({ codigo: 200, mensaje: 'OK', data: [reclamoBackend, { ...reclamoBackend, recCodigo: '124' }] });
   });
 
-  it('falls back to the user claims endpoint when the local API treats mis-reclamos as an id', () => {
-    service.misReclamos({ limit: '10', offset: '0' }).subscribe(page => {
-      expect(page.items).toEqual([jasmine.objectContaining({ id: '123' })]);
-      expect(page.total).toBe(1);
+  it('does not fall back to another user-scoped endpoint when mis-reclamos fails', () => {
+    service.misReclamos({ limit: '10', offset: '0' }).subscribe({
+      error: error => expect(error.status).toBe(400),
     });
 
     http.expectOne('http://localhost:7500/reclamos/mis-reclamos?limit=10&offset=0')
-      .flush({ codigo: 400, mensaje: 'El id del reclamo debe ser un entero positivo', data: null }, { status: 400, statusText: 'Bad Request' });
-    const fallback = http.expectOne('http://localhost:7500/reclamos/usuario/42');
-    expect(fallback.request.method).toBe('GET');
-    fallback.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: [reclamoBackend] });
+      .flush({ codigo: 400, mensaje: 'Solicitud inválida', data: null }, { status: 400, statusText: 'Bad Request' });
+    http.expectNone('http://localhost:7500/reclamos/usuario/42');
   });
 
   it('requests a claim history by claim code', () => {

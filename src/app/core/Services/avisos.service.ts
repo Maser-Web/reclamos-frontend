@@ -1,6 +1,6 @@
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { catchError, finalize, map, Observable, of, shareReplay, tap, throwError } from 'rxjs';
+import { finalize, map, Observable, of, shareReplay, tap, throwError } from 'rxjs';
 import { BACKEND_ENDPOINTS } from '../endpoints/backend.endpoints';
 import { ApiResponse } from '../interfaces/api-response.interface';
 import { Aviso } from '../interfaces/aviso.interface';
@@ -21,22 +21,21 @@ export class AvisosService {
   private inFlight: { ownerId: number; request: Observable<Aviso[]> } | null = null;
 
   consultarAvisos(options: CacheReadOptions = {}): Observable<Aviso[]> {
-    const headers = this.authenticatedHeaders();
-    if (!headers) return throwError(() => new Error('No hay una sesión activa'));
+    const accessToken = this.auth.accessToken();
+    if (!accessToken) return throwError(() => new Error('No hay una sesión activa'));
     const usuarioId = this.auth.usuarioId();
     if (usuarioId === null) return throwError(() => new Error('No hay un usuario en la sesión'));
     this.resetForOwner(usuarioId);
     if (!options.forceRefresh && this.cacheExpiresAt > Date.now()) return of(this.avisos());
     if (this.inFlight?.ownerId === usuarioId) return this.inFlight.request;
 
-    const request = this.http.get<ApiResponse<Aviso[]>>(BACKEND_ENDPOINTS.avisos.byUsuario(usuarioId), { headers }).pipe(
+    const request = this.http.get<ApiResponse<Aviso[]>>(BACKEND_ENDPOINTS.avisos.byUsuario(usuarioId)).pipe(
       map(response => response.data ?? []),
       tap(avisos => {
         if (this.auth.usuarioId() !== usuarioId) return;
         this.avisos.set(avisos);
         this.cacheExpiresAt = Date.now() + CACHE_TTL_MS;
       }),
-      catchError(error => this.handleError(error)),
       finalize(() => {
         if (this.inFlight?.ownerId === usuarioId) this.inFlight = null;
       }),
@@ -47,15 +46,14 @@ export class AvisosService {
   }
 
   marcarComoLeido(aviCod: number): Observable<void> {
-    const headers = this.authenticatedHeaders();
-    if (!headers) return throwError(() => new Error('No hay una sesión activa'));
-    return this.http.patch<ApiResponse<null>>(BACKEND_ENDPOINTS.avisos.visto(aviCod), undefined, { headers }).pipe(
+    const accessToken = this.auth.accessToken();
+    if (!accessToken) return throwError(() => new Error('No hay una sesión activa'));
+    return this.http.patch<ApiResponse<null>>(BACKEND_ENDPOINTS.avisos.visto(aviCod), undefined).pipe(
       map(() => undefined),
       tap(() => this.avisos.update(avisos => avisos.map(aviso =>
         aviso.aviCod === aviCod ? { ...aviso, aviVisto: true } : aviso,
       ))),
       tap(() => this.cacheExpiresAt = Date.now() + CACHE_TTL_MS),
-      catchError(error => this.handleError(error)),
     );
   }
 
@@ -74,17 +72,4 @@ export class AvisosService {
     this.inFlight = null;
   }
 
-  private authenticatedHeaders(): HttpHeaders | null {
-    const accessToken = this.auth.accessToken();
-    if (!accessToken) return null;
-    return new HttpHeaders({
-      Authorization: `Bearer ${accessToken}`,
-      Accept: 'application/json',
-    });
-  }
-
-  private handleError(error: unknown): Observable<never> {
-    if (error instanceof HttpErrorResponse && error.status === 401) this.auth.logout();
-    return throwError(() => error);
-  }
 }

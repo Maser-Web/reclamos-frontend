@@ -53,23 +53,27 @@ import { RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/
           <div class="dates"><div><span class="info-icon"><app-icon name="calendar-days" /></span><p><span>Creación</span><b>{{ date(r.fechaCreacion) }}</b></p></div><i></i><div><span class="info-icon"><app-icon name="refresh" /></span><p><span>Actualización</span><b>{{ date(r.fechaActualizacion) }}</b></p></div></div>
 
           <div class="desktop-actions">
+            @if (auth.puedeGestionarReclamos()) {
             @if (r.estado !== estados.FINALIZADO) {<app-button label="Finalizar reclamo" icon="check" variant="success" (click)="goClose()" />} @else {<p class="notice">Este reclamo ya está finalizado.</p>}
-            <app-button label="Ver seguimiento" icon="clipboard-list" variant="secondary" (click)="goTracking()" />
             @if (r.estado !== estados.FINALIZADO) {
               <app-button label="Derivar reclamo" icon="refresh" variant="secondary" (click)="goDerive()" />
               <app-button label="Asignar prioridad" icon="flag" variant="secondary" (click)="openPriorityModal(r.prioridad)" />
             }
+            }
+            <app-button label="Ver seguimiento" icon="clipboard-list" variant="secondary" (click)="goTracking()" />
           </div>
         </article>
 
         <div class="mobile-actions">
+          @if (auth.puedeGestionarReclamos()) {
           @if (r.estado !== estados.FINALIZADO) {<app-button label="Finalizar reclamo" icon="check" variant="success" (click)="goClose()" />} @else {<p class="notice">Este reclamo ya está finalizado.</p>}
-          <app-button label="Ver seguimiento" icon="clipboard-list" variant="secondary" (click)="goTracking()" />
           @if (r.estado !== estados.FINALIZADO) {<app-button label="Derivar reclamo" icon="refresh" variant="secondary" (click)="goDerive()" />}
+          }
+          <app-button label="Ver seguimiento" icon="clipboard-list" variant="secondary" (click)="goTracking()" />
         </div>
       </section>
     } @else {
-      <section class="page"><p class="notice">Cargando reclamo o el reclamo no existe.</p></section>
+      <section class="page"><p class="notice">{{ loadError() ? (auth.esOperador() ? 'El reclamo no existe o no fue derivado a tu usuario.' : 'El reclamo no existe.') : 'Cargando reclamo...' }}</p></section>
     }
 
     @if (priorityModalOpen()) {
@@ -89,23 +93,33 @@ export class ReclamoDetalleComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly service = inject(ReclamosService);
   private readonly notifications = inject(NotificationService);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   readonly router = inject(Router);
   readonly reclamo = signal<Reclamo | null>(null);
+  readonly loadError = signal(false);
 
   constructor() { this.load(); }
 
   date(value: string): string { const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? 'Sin información' : new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' }).format(parsed); }
   statusLabel(estado: Reclamo['estado']): string { return RECLAMO_ESTADO_ETIQUETAS[estado]; }
   isStepDone(actual: Reclamo['estado'], step: Reclamo['estado']): boolean { return [RECLAMO_ESTADOS.RECIBIDOS, RECLAMO_ESTADOS.EN_CURSO, RECLAMO_ESTADOS.FINALIZADO].indexOf(step) <= [RECLAMO_ESTADOS.RECIBIDOS, RECLAMO_ESTADOS.EN_CURSO, RECLAMO_ESTADOS.FINALIZADO].indexOf(actual); }
-  openPriorityModal(priority: PrioridadReclamo): void { this.selectedPriority.set(priority); this.priorityModalOpen.set(true); }
+  openPriorityModal(priority: PrioridadReclamo): void {
+    if (!this.auth.puedeGestionarReclamos()) return;
+    this.selectedPriority.set(priority);
+    this.priorityModalOpen.set(true);
+  }
   closePriorityModal(): void { this.priorityModalOpen.set(false); }
-  assignPriority(): void { const reclamo = this.reclamo(); if (!reclamo || this.prioritySaving()) return; const prioridad = this.selectedPriority(); this.prioritySaving.set(true); this.service.asignarPrioridad(reclamo.id, prioridad).subscribe({ next: () => { this.reclamo.update(actual => actual ? { ...actual, prioridad } : null); this.prioritySaving.set(false); this.closePriorityModal(); void this.notifications.success('Prioridad asignada'); }, error: () => { this.prioritySaving.set(false); void this.notifications.error('No se pudo asignar la prioridad', 'Intentá nuevamente.'); } }); }
-  goClose(): void { void this.router.navigate(['/reclamos', this.id(), 'cerrar']); }
+  assignPriority(): void { const reclamo = this.reclamo(); if (!reclamo || this.prioritySaving() || !this.auth.puedeGestionarReclamos()) return; const prioridad = this.selectedPriority(); this.prioritySaving.set(true); this.service.asignarPrioridad(reclamo.id, prioridad).subscribe({ next: () => { this.reclamo.update(actual => actual ? { ...actual, prioridad } : null); this.prioritySaving.set(false); this.closePriorityModal(); void this.notifications.success('Prioridad asignada'); }, error: () => { this.prioritySaving.set(false); void this.notifications.error('No se pudo asignar la prioridad', 'Intentá nuevamente.'); } }); }
+  goClose(): void { if (this.auth.puedeGestionarReclamos()) void this.router.navigate(['/reclamos', this.id(), 'cerrar']); }
   goTracking(): void { void this.router.navigate(['/reclamos', this.id(), 'seguimiento']); }
-  goDerive(): void { void this.router.navigate(['/reclamos', this.id(), 'adherir-cliente']); }
+  goDerive(): void { if (this.auth.puedeGestionarReclamos()) void this.router.navigate(['/reclamos', this.id(), 'derivar']); }
   back(): void { void this.router.navigateByUrl('/reclamos'); }
   logout(): void { this.auth.logout(); void this.router.navigateByUrl('/login'); }
-  private load(): void { this.service.detail(this.id()).subscribe({ next: reclamo => this.reclamo.set(reclamo) }); }
+  private load(): void {
+    this.service.detail(this.id()).subscribe({
+      next: reclamo => this.reclamo.set(reclamo),
+      error: () => this.loadError.set(true),
+    });
+  }
   private id(): string { return this.route.snapshot.paramMap.get('id') ?? ''; }
 }
