@@ -30,6 +30,8 @@ export const BACKEND_ENDPOINTS = {
       `${baseUrl}/reclamos/${encodeURIComponent(id)}/estado/${encodeURIComponent(estado)}`,
     asignarPrioridad: (id: string) =>
       `${baseUrl}/reclamos/${encodeURIComponent(id)}/prioridad`,
+    derivar: (id: string) =>
+      `${baseUrl}/reclamos/${encodeURIComponent(id)}/derivar`,
   },
   servicios: {
     base: `${baseUrl}/servicios`,

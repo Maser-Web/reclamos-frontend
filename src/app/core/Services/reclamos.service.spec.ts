@@ -84,6 +84,15 @@ describe('ReclamosService', () => {
     request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: null });
   });
 
+  it('derives a claim by sending the selected user code', () => {
+    service.derivar('123', 42).subscribe();
+
+    const request = http.expectOne('http://localhost:7500/reclamos/123/derivar');
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ usuCodigo: 42 });
+    request.flush({ codigo: 200, mensaje: 'OK', data: null });
+  });
+
   it('requests the claims assigned to a user', () => {
     service.byUsuario('42').subscribe(reclamos => {
       expect(reclamos).toEqual([jasmine.objectContaining({ id: '123' })]);

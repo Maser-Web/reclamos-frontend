@@ -112,7 +112,7 @@ export class LoginComponent {
     this.auth.login(this.form.getRawValue()).subscribe({
       next: () => void this.notifications.success('¡Bienvenido!', 'El acceso fue validado correctamente.').then(() => {
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-        void this.router.navigateByUrl(returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/reclamos');
+        void this.router.navigateByUrl(returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/reclamos', { replaceUrl: true });
       }),
       error: error => {
         this.loading.set(false);

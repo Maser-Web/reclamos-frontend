@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
 import { MobileLayoutComponent } from './core/components/mobile-layout.component';
 import { authGuard } from './core/Guards/auth.guard';
+import { guestGuard } from './core/Guards/guest.guard';
 import { adherirReclamoGuard } from './core/Guards/adherir-reclamo.guard';
 import { reclamosManagementGuard } from './core/Guards/reclamos-management.guard';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
-  { path: 'login', loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
+  { path: 'login', canActivate: [guestGuard], loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
   { path: 'registro', canActivate: [authGuard], loadComponent: () => import('./pages/registro/registro.component').then(m => m.RegistroComponent) },
   { path: '', component: MobileLayoutComponent, canActivateChild: [authGuard], children: [
     { path: 'reclamos/nuevo', canActivate: [reclamosManagementGuard], loadComponent: () => import('./pages/reclamo-nuevo/reclamo-nuevo.component').then(m => m.ReclamoNuevoComponent) },

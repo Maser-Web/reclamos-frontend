@@ -105,6 +105,19 @@ export class ReclamosService {
     }));
   }
 
+  derivar(id: string, usuCodigo: number): Observable<void> {
+    this.assertPositiveInteger(id, 'El id del reclamo debe ser un entero positivo');
+    if (!Number.isInteger(usuCodigo) || usuCodigo <= 0) {
+      throw new Error('El código de usuario debe ser un entero positivo');
+    }
+    return this.http.patch<ApiResponse<null>>(
+      BACKEND_ENDPOINTS.reclamos.derivar(id),
+      { usuCodigo },
+    ).pipe(map(response => {
+      if (response.codigo < 200 || response.codigo >= 300) throw new Error(response.mensaje);
+    }));
+  }
+
   private paginationParams(query: ReclamosPaginationQuery): HttpParams {
     const limit = query.limit ?? '10';
     const offset = query.offset ?? '0';
