@@ -55,7 +55,7 @@ type StatusFilter = 'todos' | EstadoReclamo;
           }
         </section>
       </section>
-    @if (dateModalOpen()) {<div class="priority-overlay" (click)="closeDateModal()"><section class="priority-modal date-modal" role="dialog" aria-modal="true" aria-labelledby="date-title" (click)="$event.stopPropagation()"><header><h2 id="date-title">Filtrar por fecha</h2><button type="button" aria-label="Cerrar" (click)="closeDateModal()"><app-icon name="x" [size]="21"/></button></header><div class="date-body"><div class="date-presets"><button type="button" (click)="setPreset('hoy')">Hoy</button><button type="button" (click)="setPreset('7')">Últimos 7 días</button><button type="button" (click)="setPreset('30')">Últimos 30 días</button><button type="button" (click)="setPreset('mes')">Este mes</button></div><div class="date-fields"><label class="date-field"><span>Desde</span><input type="date" [value]="draftFrom()" [max]="draftTo() || null" (change)="draftFrom.set($any($event.target).value)" /></label><label class="date-field"><span>Hasta</span><input type="date" [value]="draftTo()" [min]="draftFrom() || null" (change)="draftTo.set($any($event.target).value)" /></label></div></div><footer><button type="button" class="date-clear" (click)="clearDates()">Limpiar</button><button type="button" class="date-apply" (click)="applyDates()">Aplicar</button></footer></section></div>}
+    @if (dateModalOpen()) {<div class="priority-overlay" (click)="closeDateModal()"><section class="priority-modal date-modal" role="dialog" aria-modal="true" aria-labelledby="date-title" (click)="$event.stopPropagation()"><header><h2 id="date-title">Filtrar por fecha</h2><button type="button" aria-label="Cerrar" (click)="closeDateModal()"><app-icon name="x" [size]="21"/></button></header><div class="date-body"><div class="date-presets"><button type="button" (click)="setPreset('hoy')">Hoy</button><button type="button" (click)="setPreset('7')">Últimos 7 días</button><button type="button" (click)="setPreset('30')">Últimos 30 días</button></div><div class="date-fields"><label class="date-field"><span>Desde</span><input type="date" [value]="draftFrom()" [max]="draftTo() || null" (change)="draftFrom.set($any($event.target).value)" /></label><label class="date-field"><span>Hasta</span><input type="date" [value]="draftTo()" [min]="draftFrom() || null" (change)="draftTo.set($any($event.target).value)" /></label></div></div><footer><button type="button" class="date-clear" (click)="clearDates()">Limpiar</button><button type="button" class="date-apply" (click)="applyDates()">Aplicar</button></footer></section></div>}
     @if (priorityModalOpen()) {<div class="priority-overlay" (click)="closePriorityModal()"><section class="priority-modal" role="dialog" aria-modal="true" aria-labelledby="priority-title" (click)="$event.stopPropagation()"><header><h2 id="priority-title">Asignar prioridad</h2><button type="button" aria-label="Cerrar" (click)="closePriorityModal()"><app-icon name="x" [size]="21"/></button></header><fieldset><legend>Seleccione la prioridad del reclamo</legend>@for (option of priorityOptions; track option.value) {<label><input type="radio" name="priority" [value]="option.value" [checked]="selectedPriority() === option.value" (change)="selectedPriority.set(option.value)"/><span>{{ option.label }}</span></label>}</fieldset><button class="priority-submit" type="button" [disabled]="prioritySaving()" (click)="assignPriority()">{{ prioritySaving() ? 'Asignando prioridad…' : 'Asignar prioridad' }}</button></section></div>}
     </main>
   `,
@@ -130,12 +130,11 @@ export class ReclamosComponent {
   search(value: string): void { this.searchTerm.set(value); }
   setStatus(status: StatusFilter): void { this.activeStatus.set(status); }
   openDateModal(): void { this.draftFrom.set(this.dateFrom()); this.draftTo.set(this.dateTo()); this.dateModalOpen.set(true); }
-  setPreset(preset: 'hoy' | '7' | '30' | 'mes'): void {
+  setPreset(preset: 'hoy' | '7' | '30'): void {
     const today = new Date();
     const from = new Date(today);
     if (preset === '7') from.setDate(today.getDate() - 6);
     if (preset === '30') from.setDate(today.getDate() - 29);
-    if (preset === 'mes') from.setDate(1);
     this.draftFrom.set(this.toInputDate(from));
     this.draftTo.set(this.toInputDate(today));
   }

@@ -57,6 +57,20 @@ describe('ReclamosService', () => {
     request.flush({ codigo: 200, mensaje: 'OK', data: { items: [reclamoBackend], limit: 10, offset: 20, total: 31, hasNext: true } });
   });
 
+  it('does not invent an extra claim when total is absent', () => {
+    service.listarTodos({ limit: '10', offset: '0' }).subscribe(page => {
+      expect(page.total).toBe(10);
+      expect(page.hasNext).toBeTrue();
+    });
+
+    const request = http.expectOne(request => request.url === 'http://localhost:7500/reclamos');
+    request.flush({
+      codigo: 200,
+      mensaje: 'OK',
+      data: { items: Array.from({ length: 10 }, (_, index) => ({ ...reclamoBackend, recCodigo: String(index + 1) })), limit: 10, offset: 0, hasNext: true },
+    });
+  });
+
   it('sends a bearer token when requesting a claim detail', () => {
     service.detail('19').subscribe(reclamo => expect(reclamo.id).toBe('123'));
 

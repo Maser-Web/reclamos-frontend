@@ -158,13 +158,13 @@ export class ReclamosService {
     const limit = Number(pick('limit') ?? query.limit ?? '10');
     const offset = Number(pick('offset') ?? query.offset ?? '0');
     const total = Number(pick('total'));
-    // hasNext es la fuente de verdad del backend: si llega en true hay más reclamos.
+    // hasNext solo determina si se puede avanzar de página; no representa un reclamo adicional.
     const hasNext = rawHasNext === true || String(rawHasNext).toLowerCase() === 'true';
     return {
       items,
       limit,
       offset,
-      total: Number.isFinite(total) ? total : offset + items.length + (hasNext ? 1 : 0),
+      total: Number.isFinite(total) ? total : offset + items.length,
       hasNext,
     };
   }
