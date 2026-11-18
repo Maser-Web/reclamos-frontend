@@ -1,47 +1,76 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { map, Observable, throwError } from 'rxjs';
+import { map, Observable, of, tap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
+import {
+  ReclamosPageCacheService,
+  ReclamosPaginados,
+  ReclamosPaginaRequest,
+  RolReclamos,
+} from './reclamos-page-cache.service';
 import { BACKEND_ENDPOINTS } from '../endpoints/backend.endpoints';
 import { ApiResponse } from '../interfaces/api-response.interface';
 import {
   ActualizarEstadoRequest,
   HistorialReclamoBackend,
   ReclamoBackend,
-  ReclamosPaginadosBackend,
-  ReclamosPaginationQuery,
+  ReclamosPaginaResponse,
 } from '../interfaces/reclamo.interface';
 import { PrioridadReclamo, ReclamoVista, Seguimiento } from '../interfaces/models';
-import { EstadoReclamo, RECLAMO_ESTADOS, RECLAMO_ESTADOS_LISTA, RECLAMO_ESTADO_ETIQUETAS } from '../constants/reclamo-estados';
+import {
+  EstadoFiltroBackend,
+  EstadoReclamo,
+  RECLAMO_ESTADOS,
+  RECLAMO_ESTADOS_LISTA,
+  RECLAMO_ESTADO_ETIQUETAS,
+  RECLAMO_ESTADO_FILTRO_BACKEND,
+} from '../constants/reclamo-estados';
 
 export type { ReclamoVista } from '../interfaces/models';
+export type { ReclamosPaginados, ReclamosPaginaRequest, RolReclamos } from './reclamos-page-cache.service';
 
-export interface ReclamosPaginados {
-  items: ReclamoVista[];
-  limit: number;
-  offset: number;
-  total: number;
-  hasNext: boolean;
-}
+/** Tamaño fijo de página de la grilla: cada request transfiere como máximo 10 reclamos. */
+export const RECLAMOS_PAGE_SIZE = 10;
 
 @Injectable({ providedIn: 'root' })
 export class ReclamosService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
+  private readonly cache = inject(ReclamosPageCacheService);
 
-  list(query: ReclamosPaginationQuery = {}): Observable<ReclamoVista[]> {
-    const params = this.paginationParams(query);
-    return this.http.get<ApiResponse<ReclamoBackend[]>>(BACKEND_ENDPOINTS.reclamos.base, { params }).pipe(
-      map(response => this.unwrap(response).map(reclamo => this.toVista(reclamo))),
+  /** Rol que determina el endpoint de la grilla. */
+  rolActual(): RolReclamos {
+    return this.auth.esOperador() ? 'operador' : 'admin';
+  }
+
+  /**
+   * Una página de la grilla, filtrada y paginada por el backend.
+   * Administrador → GET /reclamos; operador → GET /reclamos/mis-reclamos.
+   * Reutiliza la caché si existe una página vigente para la misma clave.
+   */
+  pagina(request: ReclamosPaginaRequest): Observable<ReclamosPaginados> {
+    if (!Number.isInteger(request.limit) || request.limit < 1 || request.limit > 100) {
+      return throwError(() => new Error('El límite debe ser un entero entre 1 y 100'));
+    }
+    if (!Number.isInteger(request.offset) || request.offset < 0) {
+      return throwError(() => new Error('El offset debe ser un entero mayor o igual a 0'));
+    }
+    if (!this.auth.accessToken()) return throwError(() => new Error('No hay una sesión activa'));
+
+    this.cache.bindOwner(String(this.auth.usuarioId() ?? ''));
+    const cached = this.cache.get(request);
+    if (cached) return of(cached);
+
+    const endpoint = request.rol === 'operador' ? BACKEND_ENDPOINTS.reclamos.misReclamos : BACKEND_ENDPOINTS.reclamos.base;
+    return this.http.get<ReclamosPaginaResponse>(`${endpoint}?${this.paginaQueryString(request)}`).pipe(
+      map(response => this.toPagina(response, request)),
+      tap(pagina => this.cache.set(request, pagina)),
     );
   }
 
-  /** Página global de reclamos, disponible solo para perfiles 1, 2 y 3. */
-  listarTodos(query: ReclamosPaginationQuery = {}): Observable<ReclamosPaginados> {
-    const params = this.paginationParams(query);
-    return this.http.get<ApiResponse<ReclamosPaginadosBackend | ReclamoBackend[]>>(BACKEND_ENDPOINTS.reclamos.base, { params }).pipe(
-      map(response => this.toPage(response, query)),
-    );
+  /** Estado de la UI → valor del parámetro `estado`; `null` (“Todos”) omite el parámetro. */
+  estadoFiltro(estado: EstadoReclamo | null): EstadoFiltroBackend | null {
+    return estado ? RECLAMO_ESTADO_FILTRO_BACKEND[estado] : null;
   }
 
   detail(id: string): Observable<ReclamoVista> {
@@ -58,16 +87,6 @@ export class ReclamosService {
     return this.http.get<ApiResponse<ReclamoBackend[]>>(BACKEND_ENDPOINTS.reclamos.byUsuario(usuCodigo)).pipe(
       map(response => this.unwrap(response).map(reclamo => this.toVista(reclamo))),
     );
-  }
-
-  /** Reclamos adheridos al usuario de la sesión autenticada. */
-  misReclamos(query: ReclamosPaginationQuery = {}): Observable<ReclamosPaginados> {
-    const accessToken = this.auth.accessToken();
-    if (!accessToken) return throwError(() => new Error('No hay una sesión activa'));
-    const params = this.paginationParams(query);
-    return this.http.get<ApiResponse<ReclamosPaginadosBackend | ReclamoBackend[]>>(BACKEND_ENDPOINTS.reclamos.misReclamos, {
-      params,
-    }).pipe(map(response => this.toPage(response, query)));
   }
 
   historial(id: string): Observable<Seguimiento[]> {
@@ -90,9 +109,13 @@ export class ReclamosService {
     return this.http.patch<ApiResponse<null>>(
       BACKEND_ENDPOINTS.reclamos.actualizarEstado(id, this.toEstadoBackend(estadoNormalizado)),
       payload,
-    ).pipe(map(response => {
-      if (response.codigo < 200 || response.codigo >= 300) throw new Error(response.mensaje);
-    }));
+    ).pipe(
+      map(response => {
+        if (response.codigo < 200 || response.codigo >= 300) throw new Error(response.mensaje);
+      }),
+      // El estado anterior no se conoce aquí: se invalidan todos los filtros.
+      tap(() => this.cache.invalidar({ estadoAnterior: undefined, estadoNuevo: RECLAMO_ESTADO_FILTRO_BACKEND[estadoNormalizado] })),
+    );
   }
 
   asignarPrioridad(id: string, prioridad: PrioridadReclamo): Observable<void> {
@@ -100,9 +123,13 @@ export class ReclamosService {
     return this.http.patch<ApiResponse<null>>(
       BACKEND_ENDPOINTS.reclamos.asignarPrioridad(id),
       { prioridad: prioridad.toUpperCase() },
-    ).pipe(map(response => {
-      if (response.codigo < 200 || response.codigo >= 300) throw new Error(response.mensaje);
-    }));
+    ).pipe(
+      map(response => {
+        if (response.codigo < 200 || response.codigo >= 300) throw new Error(response.mensaje);
+      }),
+      // La prioridad no cambia a qué filtro pertenece el reclamo: se actualiza en las páginas cacheadas.
+      tap(() => this.cache.actualizarReclamo(id, { prioridad })),
+    );
   }
 
   derivar(id: string, usuCodigo: number): Observable<void> {
@@ -113,59 +140,35 @@ export class ReclamosService {
     return this.http.patch<ApiResponse<null>>(
       BACKEND_ENDPOINTS.reclamos.derivar(id),
       { usuCodigo },
-    ).pipe(map(response => {
-      if (response.codigo < 200 || response.codigo >= 300) throw new Error(response.mensaje);
-    }));
-  }
-
-  private paginationParams(query: ReclamosPaginationQuery): HttpParams {
-    const limit = query.limit ?? '10';
-    const offset = query.offset ?? '0';
-    if (!/^[1-9]\d*$/.test(limit) || Number(limit) > 100) {
-      throw new Error('El límite debe ser un entero entre 1 y 100');
-    }
-    if (!/^\d+$/.test(offset)) throw new Error('El offset debe ser un entero mayor o igual a 0');
-    return new HttpParams().set('limit', limit).set('offset', offset);
-  }
-
-  private paginate(items: ReclamoVista[], query: ReclamosPaginationQuery): ReclamosPaginados {
-    const limit = Number(query.limit ?? '10');
-    const offset = Number(query.offset ?? '0');
-    return {
-      items: items.slice(offset, offset + limit),
-      limit,
-      offset,
-      total: items.length,
-      hasNext: offset + limit < items.length,
-    };
+    ).pipe(
+      map(response => {
+        if (response.codigo < 200 || response.codigo >= 300) throw new Error(response.mensaje);
+      }),
+      // Derivar puede cambiar el estado y el responsable; el estado anterior no se conoce aquí.
+      tap(() => this.cache.invalidar({ estadoAnterior: undefined })),
+    );
   }
 
   /**
-   * Normaliza la respuesta paginada. `hasNext` puede llegar dentro de `data`,
-   * en un objeto `pagination`/`meta`, o al nivel raíz de la respuesta.
+   * `estado=EN%20CURSO&limit=10&offset=20`. URLSearchParams serializa los espacios como `+`;
+   * se reemplazan por `%20` (un `+` literal ya quedaría codificado como `%2B`).
    */
-  private toPage(response: ApiResponse<ReclamosPaginadosBackend | ReclamoBackend[]>, query: ReclamosPaginationQuery): ReclamosPaginados {
-    const data = this.unwrap(response);
-    const root = response as unknown as Record<string, unknown>;
-    const meta = (Array.isArray(data) ? {} : data) as unknown as Record<string, unknown>;
-    const nested = (meta['pagination'] ?? meta['meta'] ?? root['pagination'] ?? root['meta'] ?? {}) as Record<string, unknown>;
-    const pick = (key: string): unknown => meta[key] ?? nested[key] ?? root[key];
-    const rawHasNext = pick('hasNext') ?? pick('has_next');
-    const rawItems = Array.isArray(data) ? data : (data.items ?? []);
-    // Sin metadatos de paginación del backend, se pagina localmente el array completo.
-    if (Array.isArray(data) && rawHasNext === undefined) return this.paginate(data.map(reclamo => this.toVista(reclamo)), query);
-    const items = rawItems.map(reclamo => this.toVista(reclamo));
-    const limit = Number(pick('limit') ?? query.limit ?? '10');
-    const offset = Number(pick('offset') ?? query.offset ?? '0');
-    const total = Number(pick('total'));
-    // hasNext solo determina si se puede avanzar de página; no representa un reclamo adicional.
-    const hasNext = rawHasNext === true || String(rawHasNext).toLowerCase() === 'true';
+  private paginaQueryString(request: ReclamosPaginaRequest): string {
+    const params = new URLSearchParams();
+    if (request.estado) params.set('estado', request.estado);
+    params.set('limit', String(request.limit));
+    params.set('offset', String(request.offset));
+    return params.toString().replace(/\+/g, '%20');
+  }
+
+  /** `data` contiene solo los reclamos de la página; `hasNext` llega al nivel raíz. */
+  private toPagina(response: ReclamosPaginaResponse, request: ReclamosPaginaRequest): ReclamosPaginados {
+    if (!Array.isArray(response.data)) throw new Error(response.mensaje || 'Respuesta de reclamos inválida');
     return {
-      items,
-      limit,
-      offset,
-      total: Number.isFinite(total) ? total : offset + items.length,
-      hasNext,
+      items: response.data.map(reclamo => this.toVista(reclamo)),
+      limit: request.limit,
+      offset: request.offset,
+      hasNext: response.hasNext === true,
     };
   }
 

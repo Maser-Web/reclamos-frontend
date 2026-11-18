@@ -6,6 +6,7 @@ import { ApiResponse } from '../interfaces/api-response.interface';
 import { CrearReclamoPayload, ReclamoBackend } from '../interfaces/reclamo.interface';
 import { Servicio } from '../interfaces/servicio.interface';
 import { CacheReadOptions } from './usuario.service';
+import { ReclamosPageCacheService } from './reclamos-page-cache.service';
 
 const JSON_HEADERS = new HttpHeaders({ 'Content-Type': 'application/json' });
 const CACHE_TTL_MS = 10 * 60 * 1000;
@@ -14,13 +15,18 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
 @Injectable({ providedIn: 'root' })
 export class ReclamosApiService {
   private readonly http = inject(HttpClient);
+  private readonly reclamosCache = inject(ReclamosPageCacheService);
   private servicesCache: { value: Servicio[] | null; expiresAt: number } | null = null;
   private servicesInFlight: Observable<Servicio[] | null> | null = null;
 
   crearReclamo(payload: CrearReclamoPayload): Observable<ReclamoBackend | null> {
     return this.http.post<ApiResponse<ReclamoBackend>>(BACKEND_ENDPOINTS.reclamos.base, payload, {
       headers: JSON_HEADERS,
-    }).pipe(map(response => response.data));
+    }).pipe(
+      map(response => response.data),
+      // Un reclamo nuevo entra como RECIBIDO: afecta a “Todos” y a “Recibidos”.
+      tap(() => this.reclamosCache.invalidar({ estadoAnterior: null, estadoNuevo: 'RECIBIDO' })),
+    );
   }
 
   obtenerServicios(options: CacheReadOptions = {}): Observable<Servicio[] | null> {

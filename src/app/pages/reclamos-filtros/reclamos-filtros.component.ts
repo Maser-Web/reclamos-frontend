@@ -1,27 +1,29 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AppButtonComponent, AppHeaderComponent } from '../../core/components/ui';
-import { EstadoReclamo, RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/reclamo-estados';
+import { EstadoReclamo, RECLAMO_ESTADOS_LISTA, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/reclamo-estados';
 
 @Component({
   standalone: true,
   imports: [AppHeaderComponent, AppButtonComponent],
-  template: `<app-header title="Filtrar reclamos" [showBack]="true" (back)="back()"/><section class="page"><form class="filters" (submit)="apply($event)"><h2>Estado</h2>@for(s of estados;track s){<label><input type="checkbox" [value]="s" (change)="toggleEstado(s,$any($event.target).checked)" [checked]="selected().includes(s)"/> {{label(s)}}</label>}<p>El backend actual no ofrece filtros por área ni por fecha. El filtro de estado se aplica sobre la página cargada.</p><app-button type="submit" label="Aplicar filtros"/><app-button label="Limpiar" variant="secondary" (click)="clear()"/></form></section>`,
+  template: `<app-header title="Filtrar reclamos" [showBack]="true" (back)="back()"/><section class="page"><form class="filters" (submit)="apply($event)"><h2>Estado</h2>@for(s of estados;track s){<label><input type="checkbox" [value]="s" (change)="toggleEstado(s,$any($event.target).checked)" [checked]="selected().includes(s)"/> {{label(s)}}</label>}<p>Se puede filtrar por un estado a la vez. El backend actual no ofrece filtros por área ni por fecha.</p><app-button type="submit" label="Aplicar filtros"/><app-button label="Limpiar" variant="secondary" (click)="clear()"/></form></section>`,
   styleUrl: './reclamos-filtros.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReclamosFiltrosComponent {
   readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  readonly estados: EstadoReclamo[] = [RECLAMO_ESTADOS.EN_CURSO, RECLAMO_ESTADOS.FINALIZADO];
+  readonly estados: readonly EstadoReclamo[] = RECLAMO_ESTADOS_LISTA;
+  /** El backend filtra por un único `estado`; vacío = “Todos”. */
   readonly selected = signal<EstadoReclamo[]>([]);
 
   constructor() {
-    this.selected.set((this.route.snapshot.queryParamMap.get('estados')?.split(',').filter(Boolean) ?? []) as EstadoReclamo[]);
+    const estados = (this.route.snapshot.queryParamMap.get('estados')?.split(',').filter(Boolean) ?? []) as EstadoReclamo[];
+    this.selected.set(estados.length === 1 && RECLAMO_ESTADOS_LISTA.includes(estados[0]) ? estados : []);
   }
 
   toggleEstado(estado: EstadoReclamo, selected: boolean): void {
-    this.selected.update(estados => selected ? [...estados, estado] : estados.filter(item => item !== estado));
+    this.selected.set(selected ? [estado] : []);
   }
   apply(event: Event): void {
     event.preventDefault();

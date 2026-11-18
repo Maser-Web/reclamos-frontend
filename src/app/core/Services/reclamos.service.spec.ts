@@ -24,51 +24,81 @@ describe('ReclamosService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection(), provideHttpClient(withInterceptors([authInterceptor])), provideHttpClientTesting(), { provide: AuthService, useValue: { accessToken: signal('token-de-prueba'), usuarioCodigo: signal(42) } }, { provide: Router, useValue: { url: '/reclamos', navigate: () => Promise.resolve(true) } }, { provide: NotificationService, useValue: { error: () => Promise.resolve() } }] });
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection(), provideHttpClient(withInterceptors([authInterceptor])), provideHttpClientTesting(), { provide: AuthService, useValue: { accessToken: signal('token-de-prueba'), usuarioCodigo: signal(42), usuarioId: signal(42), esOperador: signal(false) } }, { provide: Router, useValue: { url: '/reclamos', navigate: () => Promise.resolve(true) } }, { provide: NotificationService, useValue: { error: () => Promise.resolve() } }] });
     service = TestBed.inject(ReclamosService);
     http = TestBed.inject(HttpTestingController);
   });
 
   afterEach(() => http.verify());
 
-  it('requests the first page and maps the backend contract to the UI model', () => {
-    service.list({ limit: '10', offset: '0' }).subscribe(reclamos => {
-      expect(reclamos).toEqual([jasmine.objectContaining({
+  const ok = (data: ReclamoBackend[], hasNext: boolean) => ({ codigo: 200, mensaje: 'Operacion realizada correctamente', data, hasNext });
+
+  it('requests the first admin page without estado and maps the backend contract to the UI model', () => {
+    service.pagina({ rol: 'admin', estado: null, limit: 10, offset: 0 }).subscribe(page => {
+      expect(page.items).toEqual([jasmine.objectContaining({
         id: '123', clienteId: 'Cliente de prueba', serDescri: 'Servicio 2', responsableNombre: 'Supervisor de prueba', estado: RECLAMO_ESTADOS.RECIBIDOS, prioridad: 'alta',
       })]);
+      expect(page).toEqual(jasmine.objectContaining({ limit: 10, offset: 0, hasNext: true }));
     });
 
-    const request = http.expectOne(request => request.url === 'http://localhost:7500/reclamos');
+    const request = http.expectOne('http://localhost:7500/reclamos?limit=10&offset=0');
     expect(request.request.method).toBe('GET');
-    expect(request.request.params.get('limit')).toBe('10');
-    expect(request.request.params.get('offset')).toBe('0');
-    request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: [reclamoBackend] });
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token-de-prueba');
+    request.flush(ok([reclamoBackend], true));
   });
 
-  it('requests the global paginated claims page for management profiles', () => {
-    service.listarTodos({ limit: '10', offset: '20' }).subscribe(page => {
-      expect(page.items).toEqual([jasmine.objectContaining({ id: '123' })]);
-      expect(page).toEqual(jasmine.objectContaining({ limit: 10, offset: 20, total: 31, hasNext: true }));
+  it('encodes EN CURSO as %20 and uses mis-reclamos for operators', () => {
+    service.pagina({ rol: 'operador', estado: 'EN CURSO', limit: 10, offset: 20 }).subscribe(page => {
+      expect(page.hasNext).toBeFalse();
     });
 
-    const request = http.expectOne(request => request.url === 'http://localhost:7500/reclamos');
-    expect(request.request.params.get('limit')).toBe('10');
-    expect(request.request.params.get('offset')).toBe('20');
-    request.flush({ codigo: 200, mensaje: 'OK', data: { items: [reclamoBackend], limit: 10, offset: 20, total: 31, hasNext: true } });
+    const request = http.expectOne('http://localhost:7500/reclamos/mis-reclamos?estado=EN%20CURSO&limit=10&offset=20');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token-de-prueba');
+    request.flush(ok([reclamoBackend], false));
   });
 
-  it('does not invent an extra claim when total is absent', () => {
-    service.listarTodos({ limit: '10', offset: '0' }).subscribe(page => {
-      expect(page.total).toBe(10);
-      expect(page.hasNext).toBeTrue();
-    });
+  it('maps the UI states to the backend estado filter', () => {
+    expect(service.estadoFiltro(null)).toBeNull();
+    expect(service.estadoFiltro(RECLAMO_ESTADOS.RECIBIDOS)).toBe('RECIBIDO');
+    expect(service.estadoFiltro(RECLAMO_ESTADOS.EN_CURSO)).toBe('EN CURSO');
+    expect(service.estadoFiltro(RECLAMO_ESTADOS.FINALIZADO)).toBe('FINALIZADO');
+  });
 
-    const request = http.expectOne(request => request.url === 'http://localhost:7500/reclamos');
-    request.flush({
-      codigo: 200,
-      mensaje: 'OK',
-      data: { items: Array.from({ length: 10 }, (_, index) => ({ ...reclamoBackend, recCodigo: String(index + 1) })), limit: 10, offset: 0, hasNext: true },
-    });
+  it('reuses a cached page for the same key and requests other offsets directly', () => {
+    const request = { rol: 'admin' as const, estado: 'RECIBIDO' as const, limit: 10, offset: 0 };
+    service.pagina(request).subscribe();
+    http.expectOne('http://localhost:7500/reclamos?estado=RECIBIDO&limit=10&offset=0').flush(ok([reclamoBackend], true));
+
+    let cachedItems = 0;
+    service.pagina(request).subscribe(page => cachedItems = page.items.length);
+    http.expectNone(() => true);
+    expect(cachedItems).toBe(1);
+
+    service.pagina({ ...request, offset: 50 }).subscribe();
+    http.expectOne('http://localhost:7500/reclamos?estado=RECIBIDO&limit=10&offset=50').flush(ok([], false));
+  });
+
+  it('invalidates cached pages after a state change', () => {
+    const request = { rol: 'admin' as const, estado: null, limit: 10, offset: 0 };
+    service.pagina(request).subscribe();
+    http.expectOne('http://localhost:7500/reclamos?limit=10&offset=0').flush(ok([reclamoBackend], false));
+
+    service.actualizarEstado('123', RECLAMO_ESTADOS.FINALIZADO, {}).subscribe();
+    http.expectOne('http://localhost:7500/reclamos/123/estado/FINALIZADO').flush({ codigo: 200, mensaje: 'OK', data: null });
+
+    service.pagina(request).subscribe();
+    http.expectOne('http://localhost:7500/reclamos?limit=10&offset=0').flush(ok([], false));
+  });
+
+  it('updates the priority inside cached pages', () => {
+    const request = { rol: 'admin' as const, estado: null, limit: 10, offset: 0 };
+    service.pagina(request).subscribe();
+    http.expectOne('http://localhost:7500/reclamos?limit=10&offset=0').flush(ok([reclamoBackend], false));
+
+    service.asignarPrioridad('123', 'baja').subscribe();
+    http.expectOne('http://localhost:7500/reclamos/123/prioridad').flush({ codigo: 200, mensaje: 'OK', data: null });
+
+    service.pagina(request).subscribe(page => expect(page.items[0].prioridad).toBe('baja'));
   });
 
   it('sends a bearer token when requesting a claim detail', () => {
@@ -117,33 +147,8 @@ describe('ReclamosService', () => {
     request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: [reclamoBackend] });
   });
 
-  it('requests an authenticated paginated claim page with a bearer token', () => {
-    service.misReclamos({ limit: '10', offset: '20' }).subscribe(page => {
-      expect(page.items).toEqual([jasmine.objectContaining({ id: '123' })]);
-      expect(page).toEqual(jasmine.objectContaining({ limit: 10, offset: 20, total: 31, hasNext: true }));
-    });
-
-    const request = http.expectOne(request => request.url === 'http://localhost:7500/reclamos/mis-reclamos');
-    expect(request.request.method).toBe('GET');
-    expect(request.request.headers.get('Authorization')).toBe('Bearer token-de-prueba');
-    expect(request.request.params.get('limit')).toBe('10');
-    expect(request.request.params.get('offset')).toBe('20');
-    request.flush({ codigo: 200, mensaje: 'Operacion realizada correctamente', data: { items: [reclamoBackend], limit: 10, offset: 20, total: 31, hasNext: true } });
-  });
-
-  it('adapts the previous array response while the paginated endpoint is deployed', () => {
-    service.misReclamos({ limit: '1', offset: '1' }).subscribe(page => {
-      expect(page.total).toBe(2);
-      expect(page.hasNext).toBeFalse();
-      expect(page.items).toEqual([jasmine.objectContaining({ id: '124' })]);
-    });
-
-    const request = http.expectOne(request => request.url === 'http://localhost:7500/reclamos/mis-reclamos');
-    request.flush({ codigo: 200, mensaje: 'OK', data: [reclamoBackend, { ...reclamoBackend, recCodigo: '124' }] });
-  });
-
   it('does not fall back to another user-scoped endpoint when mis-reclamos fails', () => {
-    service.misReclamos({ limit: '10', offset: '0' }).subscribe({
+    service.pagina({ rol: 'operador', estado: null, limit: 10, offset: 0 }).subscribe({
       error: error => expect(error.status).toBe(400),
     });
 

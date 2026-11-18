@@ -8,17 +8,14 @@ export interface CrearReclamoPayload {
   usu_codigo: number;
 }
 
-export interface ReclamosPaginationQuery {
-  limit?: string;
-  offset?: string;
-}
-
-/** Paginated response data returned by GET /reclamos/mis-reclamos. */
-export interface ReclamosPaginadosBackend {
-  items: ReclamoBackend[];
-  limit: number;
-  offset: number;
-  total: number;
+/**
+ * Respuesta de GET /reclamos y GET /reclamos/mis-reclamos (`?estado&limit&offset`).
+ * `data` trae solo los reclamos de la página; no hay `total`.
+ */
+export interface ReclamosPaginaResponse {
+  codigo: number;
+  mensaje: string;
+  data: ReclamoBackend[] | null;
   hasNext: boolean;
 }
 

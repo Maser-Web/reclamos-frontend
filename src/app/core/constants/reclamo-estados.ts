@@ -21,3 +21,12 @@ export const RECLAMO_ESTADO_ETIQUETAS: Record<EstadoReclamo, string> = {
   [RECLAMO_ESTADOS.EN_CURSO]: 'En curso',
   [RECLAMO_ESTADOS.FINALIZADO]: 'Finalizado',
 };
+
+/** Valores que aceptan GET /reclamos y GET /reclamos/mis-reclamos en el parámetro `estado`. */
+export type EstadoFiltroBackend = 'RECIBIDO' | 'EN CURSO' | 'FINALIZADO';
+
+export const RECLAMO_ESTADO_FILTRO_BACKEND: Record<EstadoReclamo, EstadoFiltroBackend> = {
+  [RECLAMO_ESTADOS.RECIBIDOS]: 'RECIBIDO',
+  [RECLAMO_ESTADOS.EN_CURSO]: 'EN CURSO',
+  [RECLAMO_ESTADOS.FINALIZADO]: 'FINALIZADO',
+};
