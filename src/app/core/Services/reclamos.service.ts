@@ -40,7 +40,7 @@ export class ReclamosService {
   listarTodos(query: ReclamosPaginationQuery = {}): Observable<ReclamosPaginados> {
     const params = this.paginationParams(query);
     return this.http.get<ApiResponse<ReclamosPaginadosBackend | ReclamoBackend[]>>(BACKEND_ENDPOINTS.reclamos.base, { params }).pipe(
-      map(response => this.toPage(this.unwrap(response), query)),
+      map(response => this.toPage(response, query)),
     );
   }
 
@@ -67,7 +67,7 @@ export class ReclamosService {
     const params = this.paginationParams(query);
     return this.http.get<ApiResponse<ReclamosPaginadosBackend | ReclamoBackend[]>>(BACKEND_ENDPOINTS.reclamos.misReclamos, {
       params,
-    }).pipe(map(response => this.toPage(this.unwrap(response), query)));
+    }).pipe(map(response => this.toPage(response, query)));
   }
 
   historial(id: string): Observable<Seguimiento[]> {
@@ -140,9 +140,33 @@ export class ReclamosService {
     };
   }
 
-  private toPage(page: ReclamosPaginadosBackend | ReclamoBackend[], query: ReclamosPaginationQuery): ReclamosPaginados {
-    if (Array.isArray(page)) return this.paginate(page.map(reclamo => this.toVista(reclamo)), query);
-    return { ...page, items: page.items.map(reclamo => this.toVista(reclamo)) };
+  /**
+   * Normaliza la respuesta paginada. `hasNext` puede llegar dentro de `data`,
+   * en un objeto `pagination`/`meta`, o al nivel raíz de la respuesta.
+   */
+  private toPage(response: ApiResponse<ReclamosPaginadosBackend | ReclamoBackend[]>, query: ReclamosPaginationQuery): ReclamosPaginados {
+    const data = this.unwrap(response);
+    const root = response as unknown as Record<string, unknown>;
+    const meta = (Array.isArray(data) ? {} : data) as unknown as Record<string, unknown>;
+    const nested = (meta['pagination'] ?? meta['meta'] ?? root['pagination'] ?? root['meta'] ?? {}) as Record<string, unknown>;
+    const pick = (key: string): unknown => meta[key] ?? nested[key] ?? root[key];
+    const rawHasNext = pick('hasNext') ?? pick('has_next');
+    const rawItems = Array.isArray(data) ? data : (data.items ?? []);
+    // Sin metadatos de paginación del backend, se pagina localmente el array completo.
+    if (Array.isArray(data) && rawHasNext === undefined) return this.paginate(data.map(reclamo => this.toVista(reclamo)), query);
+    const items = rawItems.map(reclamo => this.toVista(reclamo));
+    const limit = Number(pick('limit') ?? query.limit ?? '10');
+    const offset = Number(pick('offset') ?? query.offset ?? '0');
+    const total = Number(pick('total'));
+    // hasNext es la fuente de verdad del backend: si llega en true hay más reclamos.
+    const hasNext = rawHasNext === true || String(rawHasNext).toLowerCase() === 'true';
+    return {
+      items,
+      limit,
+      offset,
+      total: Number.isFinite(total) ? total : offset + items.length + (hasNext ? 1 : 0),
+      hasNext,
+    };
   }
 
   private unwrap<T>(response: ApiResponse<T>): T {

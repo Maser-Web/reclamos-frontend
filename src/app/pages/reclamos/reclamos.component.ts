@@ -32,7 +32,7 @@ type StatusFilter = 'todos' | EstadoReclamo;
         <section class="content">
           <header class="page-title"><p>GESTIÓN DE RECLAMOS</p><div><section><h1>Gestión de reclamos</h1><span>Gestioná y hacé seguimiento de todos los reclamos de clientes.</span></section><button type="button" (click)="create()"><app-icon name="plus" [size]="17" />Nuevo reclamo</button></div></header>
           <section class="summary">@for (item of summary(); track item.label) {<article [class]="item.class"><i><app-icon [name]="item.icon" [size]="28" /></i><div><b>{{ item.count }}</b><strong>{{ item.label }}</strong><small>{{ item.detail }}</small></div></article>}</section>
-          <div class="tools"><label><app-icon name="search" [size]="21"/><input [value]="searchTerm()" (input)="search($any($event.target).value)" aria-label="Buscar reclamos" placeholder="Buscar por número, motivo, cliente o descripción..." /></label><button type="button" class="mobile-filter" aria-label="Filtrar reclamos" (click)="goToFilters()"><app-icon name="list-filter" [size]="23"/></button></div>
+          <div class="tools"><label><app-icon name="search" [size]="21"/><input [value]="searchTerm()" (input)="search($any($event.target).value)" aria-label="Buscar reclamos" placeholder="Buscar por número, motivo, cliente o descripción..." /></label><button type="button" class="date-button" [class.active]="dateFilterActive()" aria-label="Filtrar por fecha" title="Filtrar por fecha" aria-haspopup="dialog" (click)="openDateModal()"><app-icon name="calendar-days" [size]="22"/>@if (dateFilterActive()) {<i aria-hidden="true"></i>}</button></div>
           <nav class="tabs"><button [class.active]="activeStatus() === 'todos'" (click)="showAll()">Todos</button><button [class.active]="activeStatus() === estados.RECIBIDOS" (click)="showReceived()">Recibidos</button><button [class.active]="activeStatus() === estados.EN_CURSO" (click)="showInProgress()">En curso</button><button [class.active]="activeStatus() === estados.FINALIZADO" (click)="showFinalized()">Finalizados</button></nav>
           @if (claims().length) {
             <div class="headings"><span>#</span><span>Reclamo</span><span>Cliente</span><span>Vendedor</span><span>Estado</span><span>Prioridad</span><span>Fecha</span><span>Acciones</span></div>
@@ -42,6 +42,8 @@ type StatusFilter = 'todos' | EstadoReclamo;
                 <div class="m-top"><span class="state">{{ statusLabel(claim.estado) }}</span><time>{{ displayDate(claim.fechaActualizacion) }}</time></div><div class="m-body"><div class="m-head"><strong>#{{ claim.numero }}</strong><span class="vendor-name">{{ claim.vendedorNombre || "Sin vendedor" }}</span></div><b>{{ claim.mtrDescri }}</b><span class="priority" [class]="claim.prioridad"><i></i>Prioridad {{ priorityLabel(claim.prioridad) }}</span><span class="description">{{ claim.descripcion }}</span><span class="client-name">Cliente: {{ client(claim) }}</span></div><div class="m-actions"><span class="responsible"><app-icon name="user-round" [size]="15"/>{{ claim.responsableNombre || claim.responsableId || 'Sin asignar' }}</span><span class="attachments"><app-icon name="paperclip" [size]="16"/>{{ attachmentCount(claim) }}</span><button type="button" aria-label="Ver detalle del reclamo" (click)="open(claim)"><app-icon name="chevron-right" [size]="27"/></button></div>
               </article>
             }</div>
+          } @else {<section class="empty"><strong>Sin reclamos para mostrar</strong><span>Probá modificando la búsqueda o los filtros.</span></section>}
+          @if (claims().length || page() > 0 || hasNextPage()) {
             <nav class="pagination" aria-label="Paginación de reclamos">
               <span>Mostrando {{ claims().length }} de {{ total() }} reclamos · Página {{ page() + 1 }}</span>
               <div>
@@ -50,9 +52,10 @@ type StatusFilter = 'todos' | EstadoReclamo;
                 <button type="button" class="next" aria-label="Página siguiente" title="Página siguiente" (click)="nextPage()" [disabled]="!hasNextPage() || loading()"><app-icon name="chevron-right" [size]="17" /></button>
               </div>
             </nav>
-          } @else {<section class="empty"><strong>Sin reclamos para mostrar</strong><span>Probá modificando la búsqueda o los filtros.</span></section>}
+          }
         </section>
       </section>
+    @if (dateModalOpen()) {<div class="priority-overlay" (click)="closeDateModal()"><section class="priority-modal date-modal" role="dialog" aria-modal="true" aria-labelledby="date-title" (click)="$event.stopPropagation()"><header><h2 id="date-title">Filtrar por fecha</h2><button type="button" aria-label="Cerrar" (click)="closeDateModal()"><app-icon name="x" [size]="21"/></button></header><div class="date-body"><div class="date-presets"><button type="button" (click)="setPreset('hoy')">Hoy</button><button type="button" (click)="setPreset('7')">Últimos 7 días</button><button type="button" (click)="setPreset('30')">Últimos 30 días</button><button type="button" (click)="setPreset('mes')">Este mes</button></div><div class="date-fields"><label class="date-field"><span>Desde</span><input type="date" [value]="draftFrom()" [max]="draftTo() || null" (change)="draftFrom.set($any($event.target).value)" /></label><label class="date-field"><span>Hasta</span><input type="date" [value]="draftTo()" [min]="draftFrom() || null" (change)="draftTo.set($any($event.target).value)" /></label></div></div><footer><button type="button" class="date-clear" (click)="clearDates()">Limpiar</button><button type="button" class="date-apply" (click)="applyDates()">Aplicar</button></footer></section></div>}
     @if (priorityModalOpen()) {<div class="priority-overlay" (click)="closePriorityModal()"><section class="priority-modal" role="dialog" aria-modal="true" aria-labelledby="priority-title" (click)="$event.stopPropagation()"><header><h2 id="priority-title">Asignar prioridad</h2><button type="button" aria-label="Cerrar" (click)="closePriorityModal()"><app-icon name="x" [size]="21"/></button></header><fieldset><legend>Seleccione la prioridad del reclamo</legend>@for (option of priorityOptions; track option.value) {<label><input type="radio" name="priority" [value]="option.value" [checked]="selectedPriority() === option.value" (change)="selectedPriority.set(option.value)"/><span>{{ option.label }}</span></label>}</fieldset><button class="priority-submit" type="button" [disabled]="prioritySaving()" (click)="assignPriority()">{{ prioritySaving() ? 'Asignando prioridad…' : 'Asignar prioridad' }}</button></section></div>}
     </main>
   `,
@@ -66,10 +69,20 @@ export class ReclamosComponent {
   private readonly notifications = inject(NotificationService);
   readonly auth = inject(AuthService);
   readonly estados = RECLAMO_ESTADOS;
+  /** Reclamos acumulados durante la visita actual a la pantalla. */
   readonly all = signal<Reclamo[]>([]);
+  /** Contenido de la página actual cuando no se está filtrando localmente. */
+  readonly currentPageClaims = signal<Reclamo[]>([]);
   readonly searchTerm = signal('');
   readonly activeStatus = signal<StatusFilter>('todos');
   readonly routeStates = signal<EstadoReclamo[]>([]);
+  /** Rango de fechas (yyyy-MM-dd, como entrega input[type=date]). Vacío = sin límite. */
+  readonly dateFrom = signal('');
+  readonly dateTo = signal('');
+  readonly dateModalOpen = signal(false);
+  readonly draftFrom = signal('');
+  readonly draftTo = signal('');
+  readonly dateFilterActive = computed(() => !!this.dateFrom() || !!this.dateTo());
   readonly page = signal(0);
   readonly loading = signal(false);
   readonly hasNextPage = signal(false);
@@ -80,17 +93,22 @@ export class ReclamosComponent {
   readonly priorityClaim = signal<Reclamo | null>(null);
   readonly priorityOptions: { value: PrioridadReclamo; label: string }[] = [{ value: 'alta', label: 'ALTA' }, { value: 'media', label: 'MEDIA' }, { value: 'baja', label: 'BAJA' }];
   private readonly pageSize = 10;
-  private readonly maxLimit = 100;
   private requestId = 0;
   readonly statusOptions = [
     { value: RECLAMO_ESTADOS.RECIBIDOS, label: RECLAMO_ESTADO_ETIQUETAS[RECLAMO_ESTADOS.RECIBIDOS] },
     { value: RECLAMO_ESTADOS.EN_CURSO, label: RECLAMO_ESTADO_ETIQUETAS[RECLAMO_ESTADOS.EN_CURSO] },
     { value: RECLAMO_ESTADOS.FINALIZADO, label: RECLAMO_ESTADO_ETIQUETAS[RECLAMO_ESTADOS.FINALIZADO] },
   ] as const;
-  readonly claims = computed(() => this.all().filter(claim => {
+  readonly filteredClaims = computed(() => this.all().filter(claim => {
     const term = this.searchTerm().trim().toLowerCase();
-    return (this.activeStatus() === 'todos' || claim.estado === this.activeStatus()) && (!term || [claim.numero, claim.asunto, claim.serDescri, claim.descripcion, this.client(claim)].join(' ').toLowerCase().includes(term));
+    const matchesRouteStates = !this.routeStates().length || this.routeStates().includes(claim.estado);
+    return matchesRouteStates
+      && this.inDateRange(claim.fechaActualizacion)
+      && (this.activeStatus() === 'todos' || claim.estado === this.activeStatus())
+      && (!term || [claim.numero, claim.asunto, claim.serDescri, claim.descripcion, this.client(claim)].join(' ').toLowerCase().includes(term));
   }));
+  /** Los filtros y la búsqueda operan sobre todas las páginas visitadas. */
+  readonly claims = computed(() => this.hasLocalFilter() ? this.filteredClaims() : this.currentPageClaims());
   readonly statusCounts = computed<ReclamosStatusCounts>(() => ({
     [RECLAMO_ESTADOS.RECIBIDOS]: this.countFor(RECLAMO_ESTADOS.RECIBIDOS),
     [RECLAMO_ESTADOS.EN_CURSO]: this.countFor(RECLAMO_ESTADOS.EN_CURSO),
@@ -111,6 +129,20 @@ export class ReclamosComponent {
   }
   search(value: string): void { this.searchTerm.set(value); }
   setStatus(status: StatusFilter): void { this.activeStatus.set(status); }
+  openDateModal(): void { this.draftFrom.set(this.dateFrom()); this.draftTo.set(this.dateTo()); this.dateModalOpen.set(true); }
+  setPreset(preset: 'hoy' | '7' | '30' | 'mes'): void {
+    const today = new Date();
+    const from = new Date(today);
+    if (preset === '7') from.setDate(today.getDate() - 6);
+    if (preset === '30') from.setDate(today.getDate() - 29);
+    if (preset === 'mes') from.setDate(1);
+    this.draftFrom.set(this.toInputDate(from));
+    this.draftTo.set(this.toInputDate(today));
+  }
+  private toInputDate(date: Date): string { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
+  closeDateModal(): void { this.dateModalOpen.set(false); }
+  applyDates(): void { this.dateFrom.set(this.draftFrom()); this.dateTo.set(this.draftTo()); this.closeDateModal(); }
+  clearDates(): void { this.dateFrom.set(''); this.dateTo.set(''); this.draftFrom.set(''); this.draftTo.set(''); this.closeDateModal(); }
   showAll(): void { this.setStatus('todos'); }
   showReceived(): void { this.setStatus(RECLAMO_ESTADOS.RECIBIDOS); }
   showInProgress(): void { this.setStatus(RECLAMO_ESTADOS.EN_CURSO); }
@@ -122,7 +154,6 @@ export class ReclamosComponent {
     void this.router.navigateByUrl('/reclamos/nuevo');
   }
   logout(): void { this.auth.logout(); void this.router.navigateByUrl('/login'); }
-  goToFilters(): void { void this.router.navigate(['/reclamos/filtros']); }
   open(claim: Reclamo, event?: Event): void { event?.stopPropagation(); void this.router.navigate(['/reclamos', claim.id]); }
   openPriority(claim: Reclamo, event: MouseEvent): void {
     event.stopPropagation();
@@ -138,7 +169,13 @@ export class ReclamosComponent {
     const prioridad = this.selectedPriority();
     this.prioritySaving.set(true);
     this.service.asignarPrioridad(claim.id, prioridad).subscribe({
-      next: () => { this.all.update(items => items.map(item => item.id === claim.id ? { ...item, prioridad } : item)); this.prioritySaving.set(false); this.closePriorityModal(); void this.notifications.success('Prioridad asignada'); },
+      next: () => {
+        this.all.update(items => items.map(item => item.id === claim.id ? { ...item, prioridad } : item));
+        this.currentPageClaims.update(items => items.map(item => item.id === claim.id ? { ...item, prioridad } : item));
+        this.prioritySaving.set(false);
+        this.closePriorityModal();
+        void this.notifications.success('Prioridad asignada');
+      },
       error: () => { this.prioritySaving.set(false); void this.notifications.error('No se pudo asignar la prioridad', 'Intentá nuevamente.'); },
     });
   }
@@ -154,23 +191,48 @@ export class ReclamosComponent {
   private loadPage(): void {
     const request = ++this.requestId;
     this.loading.set(true);
-    // Se solicita un registro adicional para confirmar si existe una página siguiente.
-    // El backend pagina por límite acumulado (limit=10, 20, 30… con offset=0).
     const start = this.page() * this.pageSize;
-    const end = start + this.pageSize;
-    const query = { limit: String(Math.min(end + 1, this.maxLimit)), offset: '0' };
+    const query = { limit: String(this.pageSize), offset: String(start) };
     const pageRequest = this.auth.esOperador() ? this.service.misReclamos(query) : this.service.listarTodos(query);
     pageRequest.subscribe({
       next: result => {
         if (request !== this.requestId) return;
-        this.hasNextPage.set(result.items.length > end && end < this.maxLimit);
-        this.total.set(Math.min(result.items.length, end + (this.hasNextPage() ? 1 : 0)));
-        const states = this.routeStates();
-        const pageClaims = result.items.slice(start, end);
-        this.all.set(states.length ? pageClaims.filter(claim => states.includes(claim.estado)) : pageClaims);
+        // hasNext: true indica que el backend tiene más reclamos para la página siguiente.
+        this.hasNextPage.set(result.hasNext);
+        this.total.set(result.total);
+        this.currentPageClaims.set(result.items);
+        this.accumulate(result.items);
       },
-      error: () => { if (request === this.requestId) { this.all.set([]); this.hasNextPage.set(false); this.total.set(0); this.loading.set(false); } },
+      error: () => {
+        if (request === this.requestId) {
+          this.hasNextPage.set(false);
+          this.loading.set(false);
+        }
+      },
       complete: () => { if (request === this.requestId) this.loading.set(false); },
+    });
+  }
+
+  private hasLocalFilter(): boolean {
+    return this.activeStatus() !== 'todos' || !!this.searchTerm().trim() || this.routeStates().length > 0 || !!this.dateFrom() || !!this.dateTo();
+  }
+
+  /** Compara por día calendario local, igual que la fecha que se muestra en cada tarjeta. */
+  private inDateRange(date: string): boolean {
+    const from = this.dateFrom();
+    const to = this.dateTo();
+    if (!from && !to) return true;
+    const value = new Date(date);
+    if (Number.isNaN(value.getTime())) return false;
+    const day = `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+    return (!from || day >= from) && (!to || day <= to);
+  }
+
+  private accumulate(incoming: Reclamo[]): void {
+    this.all.update(current => {
+      const byId = new Map(current.map(claim => [claim.id, claim]));
+      for (const claim of incoming) byId.set(claim.id, claim);
+      return [...byId.values()];
     });
   }
 }
