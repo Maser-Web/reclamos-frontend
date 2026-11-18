@@ -16,7 +16,7 @@ export const routes: Routes = [
     { path: 'reclamos/:id/derivar', canActivate: [reclamosManagementGuard], loadComponent: () => import('./pages/reclamo-derivar/reclamo-derivar.component').then(m => m.ReclamoDerivarComponent) },
     { path: 'reclamos/:id/seguimiento', loadComponent: () => import('./pages/reclamo-seguimiento/reclamo-seguimiento.component').then(m => m.ReclamoSeguimientoComponent) },
     { path: 'reclamos/:id/comentar', canActivate: [reclamosManagementGuard], loadComponent: () => import('./pages/reclamo-comentario/reclamo-comentario.component').then(m => m.ReclamoComentarioComponent) },
-    { path: 'reclamos/:id/cerrar', canActivate: [reclamosManagementGuard], loadComponent: () => import('./pages/reclamo-cerrar/reclamo-cerrar.component').then(m => m.ReclamoCerrarComponent) },
+    { path: 'reclamos/:id/cerrar', loadComponent: () => import('./pages/reclamo-cerrar/reclamo-cerrar.component').then(m => m.ReclamoCerrarComponent) },
     { path: 'reclamos/:id/adherir-cliente', canActivate: [adherirReclamoGuard], loadComponent: () => import('./pages/reclamo-adherir-cliente/reclamo-adherir-cliente.component').then(m => m.ReclamoAdherirClienteComponent) },
     { path: 'reclamos/:id', loadComponent: () => import('./pages/reclamo-detalle/reclamo-detalle.component').then(m => m.ReclamoDetalleComponent) }
   ]}, { path: '**', redirectTo: 'reclamos' }

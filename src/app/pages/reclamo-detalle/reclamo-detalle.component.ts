@@ -42,7 +42,7 @@ import { RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/
         </ol>
 
         <article class="detail-card">
-          <header class="desktop-claim-summary"><b class="desktop-status"><i></i>{{ statusLabel(r.estado) }}</b><time>{{ date(r.fechaActualizacion) }}</time></header>
+          <header class="desktop-claim-summary"><b [class]="'desktop-status ' + r.estado"><i></i>{{ statusLabel(r.estado) }}</b><time>{{ date(r.fechaActualizacion) }}</time></header>
           <div class="desktop-claim-title"><div><span>N.° de reclamo</span><strong>{{ r.numero }}</strong></div><i></i><div><span>Descripción</span><b>{{ r.descripcion }}</b></div></div>
 
           <div class="info-grid">
@@ -53,8 +53,8 @@ import { RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/
           <div class="dates"><div><span class="info-icon"><app-icon name="calendar-days" /></span><p><span>Creación</span><b>{{ date(r.fechaCreacion) }}</b></p></div><i></i><div><span class="info-icon"><app-icon name="refresh" /></span><p><span>Actualización</span><b>{{ date(r.fechaActualizacion) }}</b></p></div></div>
 
           <div class="desktop-actions">
-            @if (auth.puedeGestionarReclamos()) {
             @if (r.estado !== estados.FINALIZADO) {<app-button label="Finalizar reclamo" icon="check" variant="success" (click)="goClose()" />} @else {<p class="notice">Este reclamo ya está finalizado.</p>}
+            @if (auth.puedeGestionarReclamos()) {
             @if (r.estado !== estados.FINALIZADO) {
               <app-button label="Derivar reclamo" icon="refresh" variant="secondary" (click)="goDerive()" />
               <app-button label="Asignar prioridad" icon="flag" variant="secondary" (click)="openPriorityModal(r.prioridad)" />
@@ -65,8 +65,8 @@ import { RECLAMO_ESTADOS, RECLAMO_ESTADO_ETIQUETAS } from '../../core/constants/
         </article>
 
         <div class="mobile-actions">
-          @if (auth.puedeGestionarReclamos()) {
           @if (r.estado !== estados.FINALIZADO) {<app-button label="Finalizar reclamo" icon="check" variant="success" (click)="goClose()" />} @else {<p class="notice">Este reclamo ya está finalizado.</p>}
+          @if (auth.puedeGestionarReclamos()) {
           @if (r.estado !== estados.FINALIZADO) {<app-button label="Derivar reclamo" icon="refresh" variant="secondary" (click)="goDerive()" />}
           }
           <app-button label="Ver seguimiento" icon="clipboard-list" variant="secondary" (click)="goTracking()" />
@@ -110,7 +110,8 @@ export class ReclamoDetalleComponent {
   }
   closePriorityModal(): void { this.priorityModalOpen.set(false); }
   assignPriority(): void { const reclamo = this.reclamo(); if (!reclamo || this.prioritySaving() || !this.auth.puedeGestionarReclamos()) return; const prioridad = this.selectedPriority(); this.prioritySaving.set(true); this.service.asignarPrioridad(reclamo.id, prioridad).subscribe({ next: () => { this.reclamo.update(actual => actual ? { ...actual, prioridad } : null); this.prioritySaving.set(false); this.closePriorityModal(); void this.notifications.success('Prioridad asignada'); }, error: () => { this.prioritySaving.set(false); void this.notifications.error('No se pudo asignar la prioridad', 'Intentá nuevamente.'); } }); }
-  goClose(): void { if (this.auth.puedeGestionarReclamos()) void this.router.navigate(['/reclamos', this.id(), 'cerrar']); }
+  /** Finalizar no depende de usuAdminReclamo: cualquier usuario autenticado puede hacerlo. */
+  goClose(): void { void this.router.navigate(['/reclamos', this.id(), 'cerrar']); }
   goTracking(): void { void this.router.navigate(['/reclamos', this.id(), 'seguimiento']); }
   goDerive(): void { if (this.auth.puedeGestionarReclamos()) void this.router.navigate(['/reclamos', this.id(), 'derivar']); }
   back(): void { void this.router.navigateByUrl('/reclamos'); }

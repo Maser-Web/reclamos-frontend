@@ -13,10 +13,11 @@
   --color-text-secondary: #667085;
   --color-border: #e4e7ec;
   --color-border-strong: #d0d5dd;
-  --color-new: #e5484d;
-  --color-progress: #2970ff;
+  /* Colores de estado: los mismos que la grilla de /reclamos (Recibidos, En curso, Finalizado). */
+  --color-new: #f33445;
+  --color-progress: #ff8500;
   --color-pending: #f79009;
-  --color-closed: #12b76a;
+  --color-closed: #0fb86d;
   --font-family: 'Plus Jakarta Sans', Inter, Arial, sans-serif;
   --font-xs: .75rem;
   --font-sm: .8125rem;
